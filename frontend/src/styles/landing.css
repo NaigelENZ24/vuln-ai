@@ -1,0 +1,192 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabecera */
+.landing__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--border);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.marca__logo {
+  color: var(--accent);
+}
+
+.marca__nombre {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.marca__etiqueta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.landing__aviso {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Sección principal */
+.hero {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(48px, 9vw, 96px) 20px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.hero__eyebrow {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero__texto {
+  max-width: 620px;
+  font-size: 17px;
+  color: var(--muted);
+}
+
+/* Formulario */
+.repo-form {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.repo-form label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.repo-form__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.repo-form input {
+  flex: 1 1 280px;
+  min-height: 48px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.repo-form input::placeholder {
+  color: #7d8791;
+}
+
+.repo-form button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.repo-form button:hover {
+  filter: brightness(1.08);
+}
+
+/* Ejemplos */
+.ejemplos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ejemplos button {
+  min-height: 40px;
+  padding: 0 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ejemplos button:hover {
+  border-color: var(--accent);
+}
+
+/* Los 4 pasos */
+.pasos {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.paso {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.paso__num {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.paso h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.paso p {
+  font-size: 14px;
+  color: var(--muted);
+}
