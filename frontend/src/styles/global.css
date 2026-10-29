@@ -1,11 +1,17 @@
 :root {
-  --bg: #15181d;
-  --surface: #1b1f26;
-  --border: #2c323b;
-  --text: #e8eaed;
-  --muted: #9aa3ad;
-  --accent: #3ecf8e;
-  --accent-ink: #08140e;
+  --bg: #0c0e11;
+  --surface: #121519;
+  --border: #22272d;
+  --text: #e6e8eb;
+  --muted: #8b949e;
+  --accent: #34d399;
+  --accent-ink: #06150e;
+  --accent-strong: #1a6b50;
+  --accent-soft: rgba(52, 211, 153, 0.12);
+  --sev-critica: #f43f5e;
+  --sev-alta: #f97316;
+  --sev-media: #fbbf24;
+  --sev-baja: #38bdf8;
   --radius: 12px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
@@ -29,18 +35,23 @@ body {
 
 h1,
 h2,
+h3,
 p,
-ol {
+ol,
+ul {
   margin: 0;
 }
 
-ol {
+ol,
+ul {
   padding: 0;
   list-style: none;
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -53,3 +64,21 @@ a {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Colores por severidad: se usan con sev--critica, sev--alta, sev--media y sev--baja */
+.sev--critica { --c: var(--sev-critica); }
+.sev--alta { --c: var(--sev-alta); }
+.sev--media { --c: var(--sev-media); }
+.sev--baja { --c: var(--sev-baja); }
