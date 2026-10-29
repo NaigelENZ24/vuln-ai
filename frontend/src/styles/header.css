@@ -1,0 +1,110 @@
+.sitio-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.sitio-header__interior {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 10px clamp(16px, 4vw, 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.marca__logo {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.marca__nombre {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.marca__etiqueta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.sitio-header__aviso {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sitio-header__derecha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px 20px;
+}
+
+.sitio-header__acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-cabecera {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.btn-cabecera:hover {
+  border-color: #3a424b;
+}
+
+.btn-cabecera--primario {
+  color: #d6f5e8;
+  background: var(--accent-strong);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.btn-cabecera--primario:hover {
+  background: #1f7d5e;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.sitio-header__acciones {
+  align-items: center;
+}
+
+.sitio-header__usuario {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+button.btn-cabecera {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: transparent;
+  cursor: pointer;
+}

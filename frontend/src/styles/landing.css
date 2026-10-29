@@ -4,48 +4,6 @@
   flex-direction: column;
 }
 
-/* Cabecera */
-.landing__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 20px clamp(16px, 4vw, 48px);
-  border-bottom: 1px solid var(--border);
-}
-
-.marca {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.marca__logo {
-  color: var(--accent);
-}
-
-.marca__nombre {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.marca__etiqueta {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
-
-.landing__aviso {
-  font-size: 13px;
-  color: var(--muted);
-}
-
 /* Sección principal */
 .hero {
   max-width: 760px;
@@ -127,6 +85,11 @@
 
 .repo-form button:hover {
   filter: brightness(1.08);
+}
+
+.repo-form__error {
+  font-size: 13px;
+  color: #ff6b6b;
 }
 
 /* Ejemplos */
