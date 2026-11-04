@@ -7,14 +7,14 @@ import { iniciarSesion } from '../services/authService.js'
 import { hayErrores, validarClaveLogin, validarCorreo } from '../utils/validaciones.js'
 
 export default function Login() {
-  const { usuario, cargando } = useAuth()
+  const { usuario, cargando, esAdmin } = useAuth()
   const [datos, setDatos] = useState({ correo: '', clave: '' })
   const [errores, setErrores] = useState({})
   const [errorGeneral, setErrorGeneral] = useState('')
   const [enviando, setEnviando] = useState(false)
 
   // Si ya hay sesión, no tiene sentido ver el login.
-  if (!cargando && usuario) return <Navigate to="/" replace />
+  if (!cargando && usuario) return <Navigate to={esAdmin ? '/admin' : '/'} replace />
 
   function cambiar(e) {
     const { name, value } = e.target

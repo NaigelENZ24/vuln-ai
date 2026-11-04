@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
-import { ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
 import '../styles/header.css'
 
 export default function SiteHeader() {
-  const { usuario, cargando } = useAuth()
+  const { usuario, cargando, esAdmin } = useAuth()
   const nombre = usuario?.user_metadata?.nombre ?? usuario?.email
 
   return (
@@ -28,6 +28,12 @@ export default function SiteHeader() {
               {usuario ? (
                 <>
                   <span className="sitio-header__usuario">{nombre}</span>
+                  {esAdmin && (
+                    <Link className="btn-cabecera btn-cabecera--primario" to="/admin">
+                      <LayoutDashboard size={14} aria-hidden="true" style={{ marginRight: 6 }} />
+                      Panel admin
+                    </Link>
+                  )}
                   <button type="button" className="btn-cabecera" onClick={cerrarSesion}>
                     Cerrar sesión
                   </button>

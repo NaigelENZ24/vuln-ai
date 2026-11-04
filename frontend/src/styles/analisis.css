@@ -490,6 +490,14 @@
   background: currentColor;
 }
 
+.cargando {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 /* ---------- Chat ---------- */
 .chat {
   position: sticky;
