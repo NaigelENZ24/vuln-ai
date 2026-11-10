@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir bandit==1.8.6 semgrep==1.185.0
+# Las reglas de Semgrep se descargan al construir: al analizar, el contenedor corre sin red.
+RUN mkdir /reglas && python -c "import urllib.request as u; [u.urlretrieve(f'https://semgrep.dev/c/p/{p}', f'/reglas/{p}.yml') for p in ('javascript','react','django')]"
+COPY reglas-centinela.yml /reglas/centinela.yml
+RUN useradd -m scanner
+USER scanner
+WORKDIR /code

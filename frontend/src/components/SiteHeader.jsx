@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, ShieldCheck } from 'lucide-react'
+import { History, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
 import '../styles/header.css'
@@ -28,6 +28,10 @@ export default function SiteHeader() {
               {usuario ? (
                 <>
                   <span className="sitio-header__usuario">{nombre}</span>
+                  <Link className="btn-cabecera" to="/mis-analisis">
+                    <History size={14} aria-hidden="true" style={{ marginRight: 6 }} />
+                    Mis análisis
+                  </Link>
                   {esAdmin && (
                     <Link className="btn-cabecera btn-cabecera--primario" to="/admin">
                       <LayoutDashboard size={14} aria-hidden="true" style={{ marginRight: 6 }} />

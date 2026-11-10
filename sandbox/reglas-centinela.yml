@@ -1,0 +1,79 @@
+# Reglas propias de Centinela: cubren huecos de los paquetes oficiales de Semgrep.
+rules:
+  - id: html-dinamico-en-dom
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Se inserta en la página HTML construido con datos (innerHTML, outerHTML, insertAdjacentHTML o document.write).
+      Si esos datos vienen del usuario, del almacenamiento local o de una API, permiten XSS en el navegador.
+      Usa textContent o crea los elementos con createElement.
+    metadata:
+      category: security
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: MEDIUM
+      vulnerability_class: ["Cross-Site-Scripting (XSS)"]
+    patterns:
+      - pattern-either:
+          - pattern: $EL.innerHTML = $X
+          - pattern: $EL.innerHTML += $X
+          - pattern: $EL.outerHTML = $X
+          - pattern: $EL.insertAdjacentHTML($P, $X)
+          - pattern: document.write($X)
+          - pattern: document.writeln($X)
+      # Se ignoran solo los textos fijos: '...', "..." o `...` sin ${...}.
+      - metavariable-regex:
+          metavariable: $X
+          regex: ^(?!"[^"]*"$|'[^']*'$|`[^`$]*`$)
+      # pattern-not-regex solo descarta si cubre el hallazgo completo (desde "el." hasta el ";").
+      - pattern-not-regex: '[\w$.\[\]''"]*\.(innerHTML|outerHTML)\s*\+?=\s*`[^`$]*`;?'
+      - pattern-not-regex: '[\w$.\[\]''"]*\.insertAdjacentHTML\([^,]*,\s*`[^`$]*`\s*\);?'
+      - pattern-not-regex: 'document\.writeln?\(\s*`[^`$]*`\s*\);?'
+
+  - id: django-secret-key-en-codigo
+    languages: [python]
+    severity: ERROR
+    message: >-
+      SECRET_KEY está escrita en el código o tiene un valor por defecto. Si el repositorio es público, cualquiera puede
+      falsificar sesiones y tokens. Léela solo de una variable de entorno, sin valor por defecto.
+    metadata:
+      category: security
+      cwe: ["CWE-798: Use of Hard-coded Credentials"]
+      confidence: HIGH
+      vulnerability_class: ["Hard-coded Secrets"]
+    paths:
+      include: ["*settings*.py"]
+    pattern-either:
+      - pattern: SECRET_KEY = "..."
+      - pattern: SECRET_KEY = os.environ.get($NOMBRE, "...")
+      - pattern: SECRET_KEY = os.getenv($NOMBRE, "...")
+      - pattern: SECRET_KEY = config($NOMBRE, default="...", ...)
+
+  - id: django-debug-activado
+    languages: [python]
+    severity: WARNING
+    message: >-
+      DEBUG = True muestra a cualquier visitante trazas de error con código, rutas y configuración.
+      Desactívalo en producción y léelo de una variable de entorno.
+    metadata:
+      category: security
+      cwe: ["CWE-489: Active Debug Code"]
+      confidence: MEDIUM
+      vulnerability_class: ["Active Debug Code"]
+    paths:
+      include: ["*settings*.py"]
+    pattern: DEBUG = True
+
+  - id: django-allowed-hosts-abierto
+    languages: [python]
+    severity: WARNING
+    message: >-
+      ALLOWED_HOSTS acepta cualquier dominio ('*'), lo que facilita ataques de cabecera Host
+      (envenenamiento de caché, enlaces de recuperación de contraseña falsos). Lista solo tus dominios.
+    metadata:
+      category: security
+      cwe: ["CWE-20: Improper Input Validation"]
+      confidence: MEDIUM
+      vulnerability_class: ["Security Misconfiguration"]
+    paths:
+      include: ["*settings*.py"]
+    pattern: ALLOWED_HOSTS = [..., "*", ...]

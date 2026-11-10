@@ -4,11 +4,30 @@ import { ArrowUp, Bot } from 'lucide-react'
 const SUGERENCIAS = [
   '¿Qué debería corregir primero?',
   '¿Qué archivos concentran más riesgo?',
+  '¿Qué problemas tiene el módulo de login?',
   '¿Hay secretos expuestos en el código?',
   'Explica las inyecciones detectadas',
 ]
 
-export default function ChatAsistente({ habilitado = false, mensajes = [], onEnviar }) {
+// Un bloque de la respuesta; si su primera línea es un título corto ("Riesgo:"), se resalta.
+function BloqueIA({ texto }) {
+  const [primera, ...resto] = texto.split('\n')
+  const esTitulo = resto.length > 0 && primera.length <= 60 && primera.trim().endsWith(':')
+  return (
+    <div className="msg msg--ia">
+      {esTitulo ? (
+        <>
+          <strong className="msg__titulo">{primera.trim().slice(0, -1)}</strong>
+          {resto.join('\n')}
+        </>
+      ) : (
+        texto
+      )}
+    </div>
+  )
+}
+
+export default function ChatAsistente({ habilitado = false, mensajes = [], onEnviar, error = '' }) {
   const [texto, setTexto] = useState('')
   const cuerpo = useRef(null)
 
@@ -53,15 +72,28 @@ export default function ChatAsistente({ habilitado = false, mensajes = [], onEnv
             </div>
           </>
         ) : (
-          mensajes.map((m, i) => (
-            <div key={i} className={`msg msg--${m.rol}`}>
-              {m.texto}
-            </div>
-          ))
+          mensajes.map((m, i) =>
+            m.rol === 'ia' ? (
+              <div key={i} className="msg-ia">
+                {m.texto.split(/\n\s*\n/).map((bloque, j) => (
+                  <BloqueIA key={j} texto={bloque.trim()} />
+                ))}
+              </div>
+            ) : (
+              <div key={i} className={`msg msg--${m.rol}`}>
+                {m.texto}
+              </div>
+            )
+          )
         )}
       </div>
 
       <form className="chat__pie" onSubmit={enviar}>
+        {error && (
+          <p className="barra-repo__error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="chat__form">
           <input
             type="text"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout.jsx'
 import CampoFormulario from '../components/CampoFormulario.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -12,9 +12,10 @@ export default function Login() {
   const [errores, setErrores] = useState({})
   const [errorGeneral, setErrorGeneral] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const desde = useLocation().state?.desde
 
-  // Si ya hay sesión, no tiene sentido ver el login.
-  if (!cargando && usuario) return <Navigate to={esAdmin ? '/admin' : '/'} replace />
+  // Si ya hay sesión, vuelve a la página que pidió el login (por ejemplo, el análisis).
+  if (!cargando && usuario) return <Navigate to={desde ?? (esAdmin ? '/admin' : '/')} replace />
 
   function cambiar(e) {
     const { name, value } = e.target

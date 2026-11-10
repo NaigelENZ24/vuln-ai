@@ -1,23 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
 import { ESTADOS_ANALISIS, ESTADOS_HALLAZGO } from '../constants/estados.js'
 import { obtenerAnalisis } from '../services/adminService.js'
 import { ORDEN_NIVEL, claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { formatearFecha } from '../utils/formato.js'
 
+const POR_PAGINA = 20
+
 export default function AdminAnalisisDetalle() {
   const { id } = useParams()
   const [analisis, setAnalisis] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const seccionHallazgos = useRef(null)
 
   useEffect(() => {
     let activo = true
     setCargando(true)
     setError('')
     setAnalisis(null)
+    setPagina(1)
     obtenerAnalisis(id).then(({ data, error: fallo }) => {
       if (!activo) return
       if (fallo) setError('No se pudo cargar el análisis.')
@@ -37,6 +42,16 @@ export default function AdminAnalisisDetalle() {
       ),
     [analisis]
   )
+
+  const paginas = Math.max(1, Math.ceil(hallazgos.length / POR_PAGINA))
+  const inicio = (pagina - 1) * POR_PAGINA
+  const visibles = hallazgos.slice(inicio, inicio + POR_PAGINA)
+
+  function irAPagina(n) {
+    setPagina(n)
+    // Al cambiar de página se vuelve al inicio de la lista, no al pie donde están las flechas.
+    seccionHallazgos.current?.scrollIntoView({ block: 'start' })
+  }
 
   const repo = analisis?.repositorios
   const usuario = analisis?.perfiles
@@ -108,7 +123,7 @@ export default function AdminAnalisisDetalle() {
                 <dd className="celda-mono">{analisis.commit_sha ?? '—'}</dd>
               </div>
               <div>
-                <dt>Versión de Bandit</dt>
+                <dt>Analizadores</dt>
                 <dd>{analisis.version_bandit ?? '—'}</dd>
               </div>
               <div>
@@ -136,15 +151,16 @@ export default function AdminAnalisisDetalle() {
             <p className="texto-bloque">{analisis.resumen_ia || 'Todavía no hay resumen generado.'}</p>
           </section>
 
-          <section className="panel" aria-label="Hallazgos">
+          <section className="panel" aria-label="Hallazgos" ref={seccionHallazgos}>
             <div className="panel__cabecera">
               <h2>Hallazgos ({hallazgos.length})</h2>
             </div>
             {hallazgos.length === 0 ? (
               <p className="estado-vacio">Este análisis no tiene hallazgos registrados.</p>
             ) : (
+              <>
               <div className="lista-hall">
-                {hallazgos.map((h) => (
+                {visibles.map((h) => (
                   <details key={h.id}>
                     <summary>
                       <span className={`sev sev--${claveUI(h.severidad)}`}>
@@ -188,6 +204,35 @@ export default function AdminAnalisisDetalle() {
                   </details>
                 ))}
               </div>
+              {paginas > 1 && (
+                <div className="panel__pie">
+                  <p aria-live="polite">
+                    Hallazgos {inicio + 1} a {inicio + visibles.length} de {hallazgos.length} · Página {pagina} de{' '}
+                    {paginas}
+                  </p>
+                  <nav className="paginacion" aria-label="Páginas de hallazgos">
+                    <button
+                      type="button"
+                      className="pag-btn"
+                      disabled={pagina === 1}
+                      onClick={() => irAPagina(pagina - 1)}
+                      aria-label="Hallazgos anteriores"
+                    >
+                      <ChevronLeft size={18} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="pag-btn"
+                      disabled={pagina === paginas}
+                      onClick={() => irAPagina(pagina + 1)}
+                      aria-label="Hallazgos siguientes"
+                    >
+                      <ChevronRight size={18} aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              )}
+              </>
             )}
           </section>
         </>

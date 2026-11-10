@@ -42,7 +42,9 @@ export default function ResumenRiesgo({ hallazgos, riesgoGlobal, interpretacion,
           <div className="riesgo__error" role="alert">
             <TriangleAlert size={18} aria-hidden="true" />
             <p>{interpretacion.mensaje}</p>
-            <button type="button" onClick={onReintentar}>Reintentar</button>
+            {onReintentar && (
+              <button type="button" onClick={onReintentar}>Reintentar</button>
+            )}
           </div>
         ) : (
           <div className="riesgo__texto">

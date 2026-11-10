@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient.js'
-import { contarPorNivel } from '../utils/severidad.js'
 
 const LIMITE = 500
 
@@ -26,6 +25,8 @@ export async function obtenerResumen() {
   }
 }
 
+const n = (conteo) => conteo?.[0]?.count ?? 0
+
 function aFila(a) {
   return {
     id: a.id,
@@ -35,19 +36,26 @@ function aFila(a) {
     repo: a.repositorios?.nombre ?? a.repositorios?.url ?? '—',
     usuario: a.perfiles?.nombre ?? '—',
     correo: a.perfiles?.correo ?? '',
-    conteo: contarPorNivel(a.hallazgos),
-    total: a.hallazgos?.length ?? 0,
+    conteo: { critico: 0, alto: n(a.alto), medio: n(a.medio), bajo: n(a.bajo) },
+    total: n(a.total),
   }
 }
 
-export async function listarAnalisis() {
-  const { data, error } = await supabase
+// usuarioId: solo los análisis de ese usuario (página "Mis análisis"); sin él, todos los que permita RLS (admin).
+export async function listarAnalisis({ usuarioId } = {}) {
+  // La base cuenta los hallazgos (count) por severidad: no se descargan ni tienen el tope de 1000 filas.
+  // Los filtros "alto.severidad"... solo afectan a ese conteo, no a la lista de análisis.
+  let consulta = supabase
     .from('analisis')
     .select(
-      'id, estado, iniciado_en, consulta_nl, repositorios(url, nombre), perfiles!solicitado_por(nombre, correo), hallazgos(severidad)'
+      'id, estado, iniciado_en, consulta_nl, repositorios(url, nombre), perfiles!solicitado_por(nombre, correo), ' +
+        'total:hallazgos(count), alto:hallazgos(count), medio:hallazgos(count), bajo:hallazgos(count)'
     )
-    .order('iniciado_en', { ascending: false })
-    .limit(LIMITE)
+    .eq('alto.severidad', 'alto')
+    .eq('medio.severidad', 'medio')
+    .eq('bajo.severidad', 'bajo')
+  if (usuarioId) consulta = consulta.eq('solicitado_por', usuarioId)
+  const { data, error } = await consulta.order('iniciado_en', { ascending: false }).limit(LIMITE)
   if (error) {
     console.error('[admin] listarAnalisis', error)
     return { error }

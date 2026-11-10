@@ -132,3 +132,9 @@ a {
   font-size: 14px;
   color: var(--muted);
 }
+
+/* Estado de un análisis (se usa con .sev) */
+.est--pendiente { --c: var(--muted); }
+.est--en_proceso { --c: var(--sev-media); }
+.est--completado { --c: var(--accent); }
+.est--error { --c: var(--sev-critica); }
