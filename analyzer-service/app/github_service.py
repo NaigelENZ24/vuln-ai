@@ -63,3 +63,48 @@ def obtener_repo(url):
         "rama": datos["default_branch"],
         "clone_url": f"https://github.com/{datos['full_name']}.git",
     }
+
+
+# Igual que el check de ramas_vigiladas en la base: el nombre llega a git como argumento.
+PATRON_RAMA = re.compile(r"^(?!-)(?!.*\.\.)[A-Za-z0-9._/-]{1,200}$")
+
+
+def validar_rama(owner, repo, rama):
+    """Comprueba que la rama exista en GitHub. Devuelve el sha de su último commit."""
+    if not PATRON_RAMA.match(rama):
+        raise HTTPException(422, f"«{rama}» no es un nombre de rama válido.")
+    try:
+        r = httpx.get(f"https://api.github.com/repos/{owner}/{repo}/branches/{rama}", headers=CABECERAS, timeout=15)
+    except httpx.HTTPError:
+        raise HTTPException(502, "No se pudo consultar GitHub. Inténtalo de nuevo.")
+    if r.status_code == 404:
+        raise HTTPException(422, f"La rama «{rama}» no existe en el repositorio.")
+    if r.status_code != 200:
+        raise HTTPException(502, "GitHub no respondió correctamente (puede ser el límite de consultas). Inténtalo más tarde.")
+    return r.json()["commit"]["sha"]
+
+
+def autores_entre(owner, repo, base, head):
+    """Usuarios de GitHub que hicieron commits entre dos versiones (quién corrigió). Vacío si no se sabe."""
+    try:
+        r = httpx.get(f"https://api.github.com/repos/{owner}/{repo}/compare/{base}...{head}", headers=CABECERAS, timeout=15)
+    except httpx.HTTPError:
+        return []
+    if r.status_code != 200:
+        return []
+    logins = [(c.get("author") or {}).get("login") for c in r.json().get("commits", [])]
+    return list(dict.fromkeys(l for l in logins if l))
+
+
+def autor_ultimo_commit(owner, repo, rama, archivo):
+    """Usuario de GitHub que modificó por última vez el archivo en esa rama, o None si no se sabe."""
+    try:
+        r = httpx.get(
+            f"https://api.github.com/repos/{owner}/{repo}/commits",
+            params={"sha": rama, "path": archivo, "per_page": 1}, headers=CABECERAS, timeout=15,
+        )
+    except httpx.HTTPError:
+        return None
+    if r.status_code != 200 or not r.json():
+        return None
+    return (r.json()[0].get("author") or {}).get("login")

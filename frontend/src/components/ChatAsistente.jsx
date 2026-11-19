@@ -27,7 +27,18 @@ function BloqueIA({ texto }) {
   )
 }
 
-export default function ChatAsistente({ habilitado = false, mensajes = [], onEnviar, error = '' }) {
+const INTRO = 'Consulta los hallazgos en lenguaje natural. El asistente explica y orienta, pero no modifica el código.'
+
+export default function ChatAsistente({
+  habilitado = false,
+  mensajes = [],
+  onEnviar,
+  error = '',
+  titulo = 'Asistente de vulnerabilidades',
+  intro = INTRO,
+  sugerencias = SUGERENCIAS,
+  pistaDeshabilitado = 'Disponible cuando termine el análisis',
+}) {
   const [texto, setTexto] = useState('')
   const cuerpo = useRef(null)
 
@@ -44,21 +55,18 @@ export default function ChatAsistente({ habilitado = false, mensajes = [], onEnv
   }
 
   return (
-    <aside className="chat" aria-label="Asistente de vulnerabilidades">
+    <aside className="chat" aria-label={titulo}>
       <div className="chat__cabecera">
         <Bot size={18} aria-hidden="true" />
-        Asistente de vulnerabilidades
+        {titulo}
       </div>
 
       <div className="chat__cuerpo" ref={cuerpo} aria-live="polite">
         {mensajes.length === 0 ? (
           <>
-            <p className="chat__intro">
-              Consulta los hallazgos en lenguaje natural. El asistente explica y orienta, pero no
-              modifica el código.
-            </p>
+            <p className="chat__intro">{intro}</p>
             <div className="chat__sugerencias">
-              {SUGERENCIAS.map((s) => (
+              {sugerencias.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -99,8 +107,8 @@ export default function ChatAsistente({ habilitado = false, mensajes = [], onEnv
             type="text"
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder={habilitado ? 'Pregunta sobre los hallazgos…' : 'Disponible cuando termine el análisis'}
-            aria-label="Pregunta sobre los hallazgos"
+            placeholder={habilitado ? 'Escribe tu pregunta…' : pistaDeshabilitado}
+            aria-label="Tu pregunta"
             disabled={!habilitado}
           />
           <button

@@ -19,3 +19,7 @@ LLM_API_KEY = _requerida("LLM_API_KEY")
 LLM_MODEL = os.getenv("LLM_MODEL", "claude-opus-5-5")
 ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # opcional: sin él, GitHub permite 60 consultas por hora
+
+# Correo con Brevo (opcional). Sin estas variables las invitaciones se comparten copiando el enlace.
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+CORREO_REMITENTE = os.getenv("CORREO_REMITENTE")  # remitente verificado en Brevo

@@ -131,6 +131,7 @@ def a_hallazgo(resultado):
         "cwe_id": f"CWE-{cwe}" if cwe else None,
         "archivo": resultado.get("filename", "").removeprefix("/code/"),
         "linea": resultado.get("line_number"),
+        "_fin": (resultado.get("line_range") or [None])[-1],  # para la huella; se quita antes de guardar
         "fragmento_codigo": resultado.get("code"),
         "severidad": severidad,
         "confianza": confianza,
@@ -157,6 +158,7 @@ def a_hallazgo_semgrep(resultado, ruta):
         "cwe_id": cwe.split(":")[0] if cwe else None,
         "archivo": archivo,
         "linea": inicio,
+        "_fin": fin,
         "fragmento_codigo": _lineas(ruta, archivo, inicio, fin),
         "severidad": severidad,
         "confianza": confianza,

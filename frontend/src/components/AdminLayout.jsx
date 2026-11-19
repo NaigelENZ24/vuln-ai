@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Globe, LayoutDashboard, LogOut, Menu, ShieldCheck } from 'lucide-react'
+import { Globe, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
 import '../styles/header.css'
@@ -26,11 +26,20 @@ export default function AdminLayout({ titulo, descripcion, children }) {
         <p className="lateral__titulo">Administración</p>
         <NavLink
           to="/admin"
+          end
           className={({ isActive }) => `lateral__enlace ${isActive ? 'lateral__enlace--activo' : ''}`}
           onClick={cerrarMenu}
         >
           <LayoutDashboard size={18} aria-hidden="true" />
           Panel general
+        </NavLink>
+        <NavLink
+          to="/admin/equipos"
+          className={({ isActive }) => `lateral__enlace ${isActive ? 'lateral__enlace--activo' : ''}`}
+          onClick={cerrarMenu}
+        >
+          <Users size={18} aria-hidden="true" />
+          Equipos de trabajo
         </NavLink>
 
         <p className="lateral__titulo">Sitio</p>

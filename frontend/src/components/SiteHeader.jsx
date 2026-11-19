@@ -1,12 +1,14 @@
-import { Link } from 'react-router-dom'
-import { History, LayoutDashboard, ShieldCheck } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { ClipboardList, History, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
+import AvisoInvitaciones from './AvisoInvitaciones.jsx'
 import '../styles/header.css'
 
 export default function SiteHeader() {
-  const { usuario, cargando, esAdmin } = useAuth()
+  const { usuario, cargando, esAdmin, esMiembro, esColaborador } = useAuth()
   const nombre = usuario?.user_metadata?.nombre ?? usuario?.email
+  const enInvitacion = useLocation().pathname.startsWith('/invitacion')
 
   return (
     <header className="sitio-header">
@@ -32,6 +34,12 @@ export default function SiteHeader() {
                     <History size={14} aria-hidden="true" style={{ marginRight: 6 }} />
                     Mis análisis
                   </Link>
+                  {esMiembro && (
+                    <Link className="btn-cabecera" to="/mi-trabajo">
+                      <ClipboardList size={14} aria-hidden="true" style={{ marginRight: 6 }} />
+                      {esColaborador ? 'Mi trabajo' : 'Mi equipo'}
+                    </Link>
+                  )}
                   {esAdmin && (
                     <Link className="btn-cabecera btn-cabecera--primario" to="/admin">
                       <LayoutDashboard size={14} aria-hidden="true" style={{ marginRight: 6 }} />
@@ -56,6 +64,7 @@ export default function SiteHeader() {
           )}
         </div>
       </div>
+      {!cargando && usuario && !enInvitacion && <AvisoInvitaciones />}
     </header>
   )
 }

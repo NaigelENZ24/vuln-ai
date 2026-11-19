@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../services/supabaseClient.js'
+import { misEquipos, misInvitaciones } from '../services/equiposService.js'
 
 const AuthContext = createContext(null)
 
@@ -45,15 +46,39 @@ export function AuthProvider({ children }) {
     }
   }, [idUsuario])
 
+  // Equipos de los que es miembro e invitaciones pendientes: deciden si ve "Mi trabajo" y el aviso.
+  const [equiposEstado, setEquiposEstado] = useState({ id: null, equipos: [], invitaciones: [] })
+  const [recarga, setRecarga] = useState(0)
+  useEffect(() => {
+    if (!idUsuario) {
+      setEquiposEstado({ id: null, equipos: [], invitaciones: [] })
+      return
+    }
+    let activo = true
+    Promise.all([misEquipos(idUsuario), misInvitaciones()]).then(([e, i]) => {
+      if (activo) setEquiposEstado({ id: idUsuario, equipos: e.data ?? [], invitaciones: i.data ?? [] })
+    })
+    return () => {
+      activo = false
+    }
+  }, [idUsuario, recarga])
+
   const perfil = perfilEstado.id === idUsuario ? perfilEstado.datos : null
   const cargandoPerfil = Boolean(idUsuario) && perfilEstado.id !== idUsuario
+  const cargandoEquipos = Boolean(idUsuario) && equiposEstado.id !== idUsuario
+  const equipos = equiposEstado.id === idUsuario ? equiposEstado.equipos : []
 
   const valor = {
     sesion,
     usuario: sesion?.user ?? null,
     perfil,
     esAdmin: perfil?.rol === 'administrador',
-    cargando: cargandoSesion || cargandoPerfil,
+    equipos,
+    esMiembro: equipos.length > 0,
+    esColaborador: equipos.some((e) => e.rol === 'colaborador'),
+    invitaciones: equiposEstado.id === idUsuario ? equiposEstado.invitaciones : [],
+    recargarEquipos: () => setRecarga((n) => n + 1),
+    cargando: cargandoSesion || cargandoPerfil || cargandoEquipos,
   }
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>
 }

@@ -29,3 +29,14 @@ async function llamar(ruta, cuerpo) {
 export const iniciarAnalisis = (repoUrl) => llamar('/analyses', { repo_url: repoUrl })
 
 export const preguntarIA = (analisisId, pregunta) => llamar('/chat', { analisis_id: analisisId, pregunta })
+
+export const vincularRepositorio = (equipoId, repoUrl, ramas) =>
+  llamar(`/equipos/${equipoId}/repositorios`, { repo_url: repoUrl, ramas })
+
+export const analizarRama = (ramaId) => llamar(`/ramas/${ramaId}/analizar`, {})
+
+export const ejecutarRecordatorios = (equipoId) => llamar(`/equipos/${equipoId}/recordatorios/ejecutar`, {})
+
+export const preguntarEquipo = (equipoId, pregunta) => llamar(`/equipos/${equipoId}/asistente`, { pregunta })
+
+export const enviarInvitacion = (equipoId, codigo) => llamar('/invitaciones/enviar', { equipo_id: equipoId, codigo })

@@ -27,6 +27,12 @@ export function validarClaveLogin(valor) {
   return valor ? '' : 'Ingresa tu contraseña.'
 }
 
+// Mismo formato que el check de la base (miembros_equipo / invitaciones).
+export function validarGithub(valor) {
+  const v = valor.trim()
+  return v && !/^[A-Za-z0-9-]{1,39}$/.test(v) ? 'El usuario de GitHub solo puede tener letras, números y guiones.' : ''
+}
+
 export function hayErrores(errores) {
   return Object.values(errores).some(Boolean)
 }
