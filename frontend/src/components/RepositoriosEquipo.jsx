@@ -5,6 +5,7 @@ import { listarRamas, quitarRepositorio, semaforoRamas } from '../services/incid
 import { ESTADOS_ANALISIS } from '../constants/estados.js'
 import { MENSAJE_URL_INVALIDA, parseRepoGitHub } from '../utils/github.js'
 import { formatearFecha } from '../utils/formato.js'
+import Esqueleto from './Esqueleto.jsx'
 
 const EN_CURSO = ['pendiente', 'en_proceso']
 
@@ -104,7 +105,7 @@ export default function RepositoriosEquipo({ equipoId }) {
 
   return (
     <>
-      <form className="panel equipo-nuevo" onSubmit={vincular} noValidate>
+      <form className="panel equipo-nuevo" onSubmit={vincular} noValidate data-tutorial="vincular">
         <h2 className="equipo-nuevo__titulo">Vincular un repositorio</h2>
         <div className="eq-campos">
           <label className="eq-campo eq-campo--ancho">
@@ -148,9 +149,7 @@ export default function RepositoriosEquipo({ equipoId }) {
       )}
 
       {!error && repos === null && (
-        <p className="estado-vacio" role="status">
-          Cargando repositorios…
-        </p>
+        <Esqueleto forma="tarjetas" etiqueta="Cargando repositorios…" />
       )}
 
       {repos?.length === 0 && (

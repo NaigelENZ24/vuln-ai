@@ -4,6 +4,7 @@ import { asignarIncidencia, listarIncidenciasEquipo, resolverDescarte } from '..
 import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { ordenarPlan, plazo, ramaDeTrabajo, textoCierre, ubicacion } from '../utils/incidencias.js'
 import Carrusel from './Carrusel.jsx'
+import Esqueleto from './Esqueleto.jsx'
 
 // Arriba, lo que ya está en manos de alguien; abajo, lo que falta atender, separado por severidad.
 const FILAS_ESTADO = [
@@ -87,9 +88,7 @@ export default function TableroIncidencias({ equipoId, colaboradores, principale
   }
   if (lista === null)
     return (
-      <p className="estado-vacio" role="status">
-        Cargando incidencias…
-      </p>
+      <Esqueleto forma="tarjetas" etiqueta="Cargando incidencias…" />
     )
   if (lista.length === 0) {
     return (

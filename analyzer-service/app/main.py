@@ -2,13 +2,14 @@ import hashlib
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import asistente, correo, github_service, llm_service, pipeline, programador, recordatorios
+from app import asistente, correo, github_service, llm_service, pipeline, programador, recordatorios, verificacion
 from app.auth import usuario_actual
 from app.config import ALLOWED_ORIGIN
 from app.db import supabase
@@ -57,6 +58,13 @@ class PreguntaEquipo(BaseModel):
     pregunta: str = Field(min_length=1, max_length=1000)
 
 
+class SolicitudEquipo(BaseModel):
+    nombre_equipo: str = Field(min_length=1, max_length=80)
+    integrantes: Literal["2-4", "5-10", "mas-10"]
+    equipos: int = Field(ge=1, le=3)
+    descripcion: str = Field(default="", max_length=500)
+
+
 class EnvioInvitacion(BaseModel):
     equipo_id: UUID
     codigo: str = Field(pattern=r"^[0-9a-f]{48}$")  # el que devuelve crear_invitacion en la base
@@ -103,11 +111,48 @@ def _es_admin(usuario_id):
     return bool(perfil and perfil.data and perfil.data["rol"] == "administrador")
 
 
+def _gestiona(usuario_id, equipo_id):
+    """Administrador, o líder (quien creó) de ESE equipo. Igual que gestiona_equipo() en la base."""
+    if _es_admin(usuario_id):
+        return True
+    fila = supabase.table("equipos").select("creado_por").eq("id", str(equipo_id)).maybe_single().execute()
+    return bool(fila and fila.data and fila.data["creado_por"] == usuario_id)
+
+
+@app.post("/solicitudes", status_code=201)
+def crear_solicitud(datos: SolicitudEquipo, usuario_id: str = Depends(usuario_actual)):
+    """Un desarrollador pide crear equipos. La guarda y avisa por correo a los administradores."""
+    perfil = supabase.table("perfiles").select("nombre, correo, rol").eq("id", usuario_id).maybe_single().execute()
+    if not perfil or not perfil.data:
+        raise HTTPException(404, "No existe tu perfil.")
+    if perfil.data["rol"] == "administrador":
+        raise HTTPException(409, "El administrador ya puede crear equipos.")
+    try:
+        fila = supabase.table("solicitudes_equipo").insert({
+            "solicitante": usuario_id, "nombre_equipo": datos.nombre_equipo.strip(),
+            "integrantes": datos.integrantes, "equipos_solicitados": datos.equipos,
+            "descripcion": datos.descripcion.strip() or None,
+        }).execute().data[0]
+    except Exception as error:
+        if "solicitudes_pendiente_unica" in str(error):
+            raise HTTPException(409, "Ya tienes una solicitud pendiente. El administrador la revisará pronto.")
+        raise
+    if correo.configurado():
+        admins = supabase.table("perfiles").select("correo").eq("rol", "administrador").execute().data
+        mensaje = correo.mensaje_solicitud(perfil.data["nombre"], perfil.data["correo"], fila, f"{ALLOWED_ORIGIN}/admin/solicitudes")
+        for admin in admins:
+            try:
+                correo.enviar(admin["correo"], mensaje)
+            except correo.CorreoNoEnviado:
+                logging.exception("No se pudo avisar de la solicitud %s a %s", fila["id"], admin["correo"])
+    return {"id": fila["id"]}
+
+
 @app.post("/equipos/{equipo_id}/repositorios", status_code=201)
 def vincular_repositorio(equipo_id: UUID, datos: RepoEquipo, usuario_id: str = Depends(usuario_actual)):
     """Vincula un repositorio público a un equipo y deja vigiladas su rama principal y las ramas elegidas."""
-    if not _es_admin(usuario_id):
-        raise HTTPException(403, "Solo el administrador puede vincular repositorios.")
+    if not _gestiona(usuario_id, equipo_id):
+        raise HTTPException(403, "Solo el administrador o el líder del equipo puede vincular repositorios.")
     equipo = supabase.table("equipos").select("id").eq("id", str(equipo_id)).maybe_single().execute()
     if not equipo or not equipo.data:
         raise HTTPException(404, "No existe ese equipo.")
@@ -138,8 +183,8 @@ def vincular_repositorio(equipo_id: UUID, datos: RepoEquipo, usuario_id: str = D
 
 
 def _puede_analizar(usuario_id, vigilada, equipo_id):
-    """Admin; o colaborador en su rama de trabajo (la principal si no tiene otra) o donde tenga algo que verificar."""
-    if _es_admin(usuario_id):
+    """Admin o líder del equipo; o colaborador en su rama de trabajo (la principal si no tiene otra) o donde tenga algo que verificar."""
+    if _gestiona(usuario_id, equipo_id):
         return True
     if not (supabase.table("miembros_equipo").select("usuario_id").eq("equipo_id", equipo_id)
             .eq("usuario_id", usuario_id).eq("rol", "colaborador").limit(1).execute().data):
@@ -180,11 +225,30 @@ def analizar_rama(rama_id: UUID, tareas: BackgroundTasks, usuario_id: str = Depe
     return {"id": analisis_id, "en_curso": False}
 
 
+@app.post("/incidencias/{incidencia_id}/verificar", status_code=202)
+def verificar_incidencia(incidencia_id: UUID, tareas: BackgroundTasks, usuario_id: str = Depends(usuario_actual)):
+    """«Ya la corregí, verificar»: revisa solo el archivo de la incidencia (el análisis completo es del admin)."""
+    r = (
+        supabase.table("incidencias")
+        .select("id, huella, archivo, regla_id, rama, estado, descarte_solicitado, asignado_a, repositorios(url)")
+        .eq("id", str(incidencia_id)).maybe_single().execute()
+    )
+    inc = r.data if r else None
+    if not inc or (inc["asignado_a"] != usuario_id and not _es_admin(usuario_id)):
+        raise HTTPException(404, "No existe esa incidencia.")
+    # Antes se pasa a en_revision con cambiar_estado('verificar'), que valida quién puede pedirlo.
+    if inc["estado"] != "en_revision" or inc["descarte_solicitado"]:
+        raise HTTPException(409, "La incidencia no está esperando verificación.")
+    owner, repo = github_service.parsear_url(inc["repositorios"]["url"])
+    tareas.add_task(verificacion.ejecutar, inc, owner, repo)
+    return {"archivo": inc["archivo"]}
+
+
 @app.post("/equipos/{equipo_id}/recordatorios/ejecutar")
 def ejecutar_recordatorios(equipo_id: UUID, usuario_id: str = Depends(usuario_actual)):
     """«Enviar recordatorios ahora» (también corren solos cada día a la hora del equipo)."""
-    if not _es_admin(usuario_id):
-        raise HTTPException(403, "Solo el administrador puede enviar recordatorios.")
+    if not _gestiona(usuario_id, equipo_id):
+        raise HTTPException(403, "Solo el administrador o el líder del equipo puede enviar recordatorios.")
     return recordatorios.ejecutar(str(equipo_id), forzar=True)
 
 
@@ -192,8 +256,8 @@ def ejecutar_recordatorios(equipo_id: UUID, usuario_id: str = Depends(usuario_ac
 def enviar_invitacion(datos: EnvioInvitacion, usuario_id: str = Depends(usuario_actual)):
     if not correo.configurado():
         raise HTTPException(503, "El envío de correos no está configurado. Copia el enlace y envíalo tú.")
-    if not _es_admin(usuario_id):
-        raise HTTPException(403, "Solo el administrador puede enviar invitaciones.")
+    if not _gestiona(usuario_id, datos.equipo_id):
+        raise HTTPException(403, "Solo el administrador o el líder del equipo puede enviar invitaciones.")
 
     # Solo se envía a una invitación pendiente de ese equipo: el servicio no sirve para escribir a cualquiera.
     filas = (
@@ -218,10 +282,17 @@ def enviar_invitacion(datos: EnvioInvitacion, usuario_id: str = Depends(usuario_
 
 @app.post("/equipos/{equipo_id}/asistente")
 def asistente_equipo(equipo_id: UUID, datos: PreguntaEquipo, usuario_id: str = Depends(usuario_actual)):
-    """Asistente IA del equipo: solo el administrador (compara a las personas)."""
-    if not _es_admin(usuario_id):
-        raise HTTPException(403, "Solo el administrador puede usar el asistente del equipo.")
+    """Asistente IA del equipo: el administrador o el líder de ese equipo (compara a las personas)."""
+    if not _gestiona(usuario_id, equipo_id):
+        raise HTTPException(403, "Solo el administrador o el líder del equipo puede usar el asistente.")
     equipo = str(equipo_id)
+    # Sin un análisis terminado no hay datos: no se gasta una petición a la IA.
+    analizadas = (
+        supabase.table("ramas_vigiladas").select("id, repositorios!inner(equipo_id)")
+        .eq("repositorios.equipo_id", equipo).not_.is_("ultimo_sha", "null").limit(1).execute().data
+    )
+    if not analizadas:
+        raise HTTPException(409, "Agrega un repositorio y ejecuta un análisis para poder hablar con el asistente.")
     hoy = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     preguntas_hoy = (
         supabase.table("chat_equipo").select("id", count="exact").eq("equipo_id", equipo)

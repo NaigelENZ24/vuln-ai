@@ -8,6 +8,7 @@ import { ESTADOS_ANALISIS } from '../constants/estados.js'
 import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { formatearFecha } from '../utils/formato.js'
 import '../styles/analisis.css'
+import Esqueleto from '../components/Esqueleto.jsx'
 
 const NIVELES = ['alto', 'medio', 'bajo']
 
@@ -52,9 +53,7 @@ export default function MisAnalisis() {
         )}
 
         {!error && filas === null && (
-          <p className="vacio" role="status">
-            Cargando tus análisis…
-          </p>
+          <Esqueleto forma="tabla" etiqueta="Cargando tus análisis…" />
         )}
 
         {filas?.length === 0 && (

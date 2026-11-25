@@ -1,4 +1,5 @@
 import re
+from urllib.parse import quote
 
 import httpx
 from fastapi import HTTPException
@@ -108,3 +109,19 @@ def autor_ultimo_commit(owner, repo, rama, archivo):
     if r.status_code != 200 or not r.json():
         return None
     return (r.json()[0].get("author") or {}).get("login")
+
+
+MAX_ARCHIVO = 5 * 1024 * 1024  # 5 MB: un archivo de código más grande no es normal
+
+
+def descargar_archivo(owner, repo, sha, archivo):
+    """Contenido de un archivo en un commit, o None si ya no existe. Sin clonar el repositorio."""
+    # raw.githubusercontent.com no gasta el límite de consultas de la API.
+    r = httpx.get(f"https://raw.githubusercontent.com/{owner}/{repo}/{sha}/{quote(archivo)}", timeout=30)
+    if r.status_code == 404:
+        return None
+    if r.status_code != 200:
+        raise RuntimeError(f"GitHub respondió {r.status_code} al descargar {archivo}")
+    if len(r.content) > MAX_ARCHIVO:
+        raise RuntimeError(f"El archivo {archivo} es demasiado grande para verificarlo")
+    return r.content

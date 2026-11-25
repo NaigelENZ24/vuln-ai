@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
     let activo = true
     supabase
       .from('perfiles')
-      .select('nombre, rol')
+      .select('nombre, rol, cupo_equipos')
       .eq('id', idUsuario)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -73,6 +73,9 @@ export function AuthProvider({ children }) {
     usuario: sesion?.user ?? null,
     perfil,
     esAdmin: perfil?.rol === 'administrador',
+    // Líder de equipo: el admin le aprobó una solicitud (cupo > 0). Gestiona solo los equipos que crea.
+    esLider: perfil?.rol !== 'administrador' && (perfil?.cupo_equipos ?? 0) > 0,
+    cupoEquipos: perfil?.cupo_equipos ?? 0,
     equipos,
     esMiembro: equipos.length > 0,
     esColaborador: equipos.some((e) => e.rol === 'colaborador'),

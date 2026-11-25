@@ -6,7 +6,7 @@ import AvisoInvitaciones from './AvisoInvitaciones.jsx'
 import '../styles/header.css'
 
 export default function SiteHeader() {
-  const { usuario, cargando, esAdmin, esMiembro, esColaborador } = useAuth()
+  const { usuario, cargando, esAdmin, esLider, esMiembro, esColaborador } = useAuth()
   const nombre = usuario?.user_metadata?.nombre ?? usuario?.email
   const enInvitacion = useLocation().pathname.startsWith('/invitacion')
 
@@ -38,6 +38,12 @@ export default function SiteHeader() {
                     <Link className="btn-cabecera" to="/mi-trabajo">
                       <ClipboardList size={14} aria-hidden="true" style={{ marginRight: 6 }} />
                       {esColaborador ? 'Mi trabajo' : 'Mi equipo'}
+                    </Link>
+                  )}
+                  {esLider && (
+                    <Link className="btn-cabecera btn-cabecera--primario" to="/admin/equipos">
+                      <LayoutDashboard size={14} aria-hidden="true" style={{ marginRight: 6 }} />
+                      Mis equipos
                     </Link>
                   )}
                   {esAdmin && (

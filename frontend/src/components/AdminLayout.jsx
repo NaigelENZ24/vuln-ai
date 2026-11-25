@@ -1,46 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Globe, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
+import { Globe, Inbox, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
+import { contarPendientes } from '../services/solicitudesService.js'
 import '../styles/header.css'
 import '../styles/admin.css'
 
 export default function AdminLayout({ titulo, descripcion, children }) {
-  const { perfil, usuario } = useAuth()
+  const { perfil, usuario, esAdmin } = useAuth()
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [pendientes, setPendientes] = useState(0)
+  useEffect(() => {
+    if (esAdmin) contarPendientes().then(({ data }) => setPendientes(data))
+  }, [esAdmin])
+  const clase = ({ isActive }) => `lateral__enlace ${isActive ? 'lateral__enlace--activo' : ''}`
   const nombre = perfil?.nombre ?? usuario?.email
   const cerrarMenu = () => setMenuAbierto(false)
 
   return (
     <div className={`admin ${menuAbierto ? 'admin--menu' : ''}`}>
       <aside className="admin__lateral" aria-label="Navegación del panel">
-        <Link className="marca admin__marca" to="/admin" onClick={cerrarMenu}>
+        <Link className="marca admin__marca" to={esAdmin ? '/admin' : '/admin/equipos'} onClick={cerrarMenu}>
           <span className="marca__logo">
             <ShieldCheck size={18} aria-hidden="true" />
           </span>
           <span className="marca__nombre">Centinela</span>
-          <span className="marca__etiqueta">ADMIN</span>
+          <span className="marca__etiqueta">{esAdmin ? 'ADMIN' : 'LÍDER'}</span>
         </Link>
 
-        <p className="lateral__titulo">Administración</p>
-        <NavLink
-          to="/admin"
-          end
-          className={({ isActive }) => `lateral__enlace ${isActive ? 'lateral__enlace--activo' : ''}`}
-          onClick={cerrarMenu}
-        >
-          <LayoutDashboard size={18} aria-hidden="true" />
-          Panel general
-        </NavLink>
-        <NavLink
-          to="/admin/equipos"
-          className={({ isActive }) => `lateral__enlace ${isActive ? 'lateral__enlace--activo' : ''}`}
-          onClick={cerrarMenu}
-        >
+        <p className="lateral__titulo">{esAdmin ? 'Administración' : 'Líder de equipo'}</p>
+        {esAdmin && (
+          <NavLink to="/admin" end className={clase} onClick={cerrarMenu}>
+            <LayoutDashboard size={18} aria-hidden="true" />
+            Panel general
+          </NavLink>
+        )}
+        <NavLink to="/admin/equipos" className={clase} onClick={cerrarMenu}>
           <Users size={18} aria-hidden="true" />
-          Equipos de trabajo
+          {esAdmin ? 'Equipos de trabajo' : 'Mis equipos'}
         </NavLink>
+        {esAdmin && (
+          <NavLink to="/admin/solicitudes" className={clase} onClick={cerrarMenu}>
+            <Inbox size={18} aria-hidden="true" />
+            Solicitudes
+            {pendientes > 0 && (
+              <span className="lateral__contador" aria-label={`${pendientes} pendientes`}>
+                {pendientes}
+              </span>
+            )}
+          </NavLink>
+        )}
 
         <p className="lateral__titulo">Sitio</p>
         <Link className="lateral__enlace" to="/" onClick={cerrarMenu}>
@@ -66,7 +76,7 @@ export default function AdminLayout({ titulo, descripcion, children }) {
           </button>
           <div className="admin__usuario">
             <span>{nombre}</span>
-            <span className="sev est--completado">Administrador</span>
+            <span className="sev est--completado">{esAdmin ? 'Administrador' : 'Líder de equipo'}</span>
             <button type="button" className="btn-cabecera" onClick={cerrarSesion}>
               <LogOut size={14} aria-hidden="true" />
               Cerrar sesión

@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Brain, TriangleAlert } from 'lucide-react'
 import { SEVERIDADES } from '../constants/severidades.js'
 
-export default function ResumenRiesgo({ hallazgos, riesgoGlobal, interpretacion, onReintentar }) {
+function ResumenRiesgo({ hallazgos, riesgoGlobal, interpretacion, onReintentar }) {
   const total = hallazgos.length
   const conteo = Object.fromEntries(
     SEVERIDADES.map((s) => [s.clave, hallazgos.filter((h) => h.severidad === s.clave).length])
@@ -57,3 +58,4 @@ export default function ResumenRiesgo({ hallazgos, riesgoGlobal, interpretacion,
     </section>
   )
 }
+export default memo(ResumenRiesgo)

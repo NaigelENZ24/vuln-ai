@@ -138,3 +138,71 @@ a {
 .est--en_proceso { --c: var(--sev-media); }
 .est--completado { --c: var(--accent); }
 .est--error { --c: var(--sev-critica); }
+
+/* Esqueletos de carga (components/Esqueleto.jsx) */
+.esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.esqueleto--tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.esqueleto__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.esqueleto__fila {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.esqueleto__barra {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--border) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brillo 1.4s ease-in-out infinite;
+}
+
+.esqueleto__barra--titulo {
+  height: 18px;
+  width: 60%;
+}
+
+.esqueleto__barra--corta {
+  width: 40%;
+}
+
+@keyframes esqueleto-brillo {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto__barra {
+    animation: none;
+  }
+}
+
+/* Mientras se descarga el código de una página (rutas diferidas en App.jsx) */
+.carga-ruta {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 96px 16px 32px;
+}

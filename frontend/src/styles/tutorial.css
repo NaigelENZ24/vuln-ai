@@ -1,0 +1,253 @@
+/* Tutorial del equipo (TutorialEquipo.jsx). Prefijo tut- */
+.tut {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* Paneles alrededor del elemento resaltado: oscurecen y desenfocan el resto de la pantalla. */
+.tut__velo {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* Marco del elemento resaltado con un anillo que pulsa (solo transform y opacity: no recalcula el diseño). */
+.tut__foco {
+  position: fixed;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  pointer-events: auto; /* bloquea el clic: se avanza con las flechas del globo */
+}
+
+.tut__foco::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  animation: tut-pulso 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+@keyframes tut-pulso {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+.tut__globo {
+  position: fixed;
+  padding: 18px 20px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: tut-entrada 180ms ease-out;
+}
+
+.tut__globo--centro {
+  top: 50%;
+  left: 50%;
+  width: min(420px, calc(100vw - 32px));
+  transform: translate(-50%, -50%);
+  animation-name: tut-entrada-centro;
+}
+
+@keyframes tut-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes tut-entrada-centro {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+}
+
+.tut__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tut__contador {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.tut__x {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tut__x:hover {
+  color: var(--text);
+}
+
+.tut__globo h2 {
+  margin: 6px 0 6px;
+  font-size: 17px;
+}
+
+.tut__globo p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tut__puntos {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.tut__punto {
+  width: 7px;
+  height: 7px;
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.tut__punto--activo {
+  background: var(--accent);
+}
+
+.tut__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tut__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tut__btn--texto {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.tut__siguiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Botón «?» de la esquina ---------- */
+.tut-ayuda {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.tut-ayuda__boton {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.tut-ayuda__boton:hover {
+  border-color: var(--accent);
+}
+
+.tut-ayuda__pregunta {
+  width: min(260px, calc(100vw - 40px));
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  animation: tut-entrada 160ms ease-out;
+}
+
+.tut-ayuda__pregunta p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.tut-ayuda__botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tut-ayuda__si,
+.tut-ayuda__no {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tut-ayuda__si {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 0;
+}
+
+.tut-ayuda__no {
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.tut__btn:focus-visible,
+.tut__x:focus-visible,
+.tut-ayuda__boton:focus-visible,
+.tut-ayuda__si:focus-visible,
+.tut-ayuda__no:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tut__foco::after,
+  .tut__globo,
+  .tut-ayuda__pregunta {
+    animation: none;
+  }
+}

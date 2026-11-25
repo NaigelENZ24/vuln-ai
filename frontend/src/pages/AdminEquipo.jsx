@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Settings } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import ResumenEquipo from '../components/ResumenEquipo.jsx'
 import TableroIncidencias from '../components/TableroIncidencias.jsx'
 import ColaboradoresEquipo from '../components/ColaboradoresEquipo.jsx'
 import ConfiguracionEquipo from '../components/ConfiguracionEquipo.jsx'
 import AsistenteEquipo from '../components/AsistenteEquipo.jsx'
+import TutorialEquipo, { BotonRepasar, tutorialVisto } from '../components/TutorialEquipo.jsx'
 import { obtenerEquipo } from '../services/equiposService.js'
 import '../styles/equipos.css'
+import Esqueleto from '../components/Esqueleto.jsx'
 
 const PESTANAS = [
   { clave: 'resumen', titulo: 'Resumen' },
@@ -21,6 +24,14 @@ const PESTANAS = [
 export default function AdminEquipo() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
+  const { esAdmin, esLider, usuario } = useAuth()
+  // Tutorial: sale solo la primera vez que un líder entra a su equipo (se recuerda en este navegador).
+  const [tutorial, setTutorial] = useState(() => esLider && Boolean(usuario) && !tutorialVisto(usuario.id))
+  const setParamsRef = useRef(setParams)
+  setParamsRef.current = setParams
+  // Estable entre renders: el tutorial lo usa en un efecto y cambiar la URL no debe volver a dispararlo.
+  const cambiarTab = useCallback((clave) => setParamsRef.current({ tab: clave }, { replace: true }), [])
+  const cerrarTutorial = useCallback(() => setTutorial(false), [])
   const tab = PESTANAS.some((p) => p.clave === params.get('tab')) ? params.get('tab') : 'resumen'
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState('')
@@ -71,9 +82,7 @@ export default function AdminEquipo() {
   if (!datos) {
     return (
       <AdminLayout titulo="Equipo">
-        <p className="estado-vacio" role="status">
-          Cargando equipo…
-        </p>
+        <Esqueleto forma="tarjetas" etiqueta="Cargando equipo…" />
       </AdminLayout>
     )
   }
@@ -84,7 +93,7 @@ export default function AdminEquipo() {
     <AdminLayout titulo={equipo.nombre} descripcion={equipo.descripcion}>
       <Link className="detalle__volver" to="/admin/equipos">
         <ArrowLeft size={16} aria-hidden="true" />
-        Equipos de trabajo
+        {esAdmin ? 'Equipos de trabajo' : 'Mis equipos'}
       </Link>
 
       <nav className="pestanas" aria-label="Secciones del equipo">
@@ -94,6 +103,7 @@ export default function AdminEquipo() {
             type="button"
             className={`pestana ${p.icono ? 'pestana--icono' : ''} ${tab === p.clave ? 'pestana--activa' : ''}`}
             aria-current={tab === p.clave ? 'page' : undefined}
+            data-tutorial={`tab-${p.clave}`}
             aria-label={p.icono ? p.titulo : undefined}
             title={p.icono ? p.titulo : undefined}
             onClick={() => setParams({ tab: p.clave }, { replace: true })}
@@ -124,7 +134,23 @@ export default function AdminEquipo() {
         <ColaboradoresEquipo equipoId={id} datos={datos} nombreRama={nombreRama} principales={principales} recargar={recargar} />
       )}
 
-      {tab === 'asistente' && <AsistenteEquipo equipoId={id} />}
+      {tab === 'asistente' && (
+        <AsistenteEquipo
+          equipoId={id}
+          // Sin repositorio o sin ningún análisis terminado, el asistente no tiene datos de qué hablar.
+          sinDatos={
+            datos.repos.length === 0
+              ? 'sin-repos'
+              : datos.repos.some((r) => r.ramas_vigiladas.some((v) => v.ultimo_sha))
+                ? null
+                : 'sin-analisis'
+          }
+          irAResumen={() => cambiarTab('resumen')}
+        />
+      )}
+
+      <TutorialEquipo usuarioId={usuario?.id} abierto={tutorial} onCerrar={cerrarTutorial} cambiarTab={cambiarTab} />
+      {!tutorial && <BotonRepasar onRepasar={() => setTutorial(true)} />}
 
       {tab === 'configuracion' && <ConfiguracionEquipo equipoId={id} datos={datos} recargar={recargar} />}
     </AdminLayout>

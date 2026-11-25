@@ -6,6 +6,7 @@ import { ejecutarRecordatorios } from '../services/analyzerApi.js'
 import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { ordenarPlan, plazo, ubicacion } from '../utils/incidencias.js'
 import { formatearFecha } from '../utils/formato.js'
+import Esqueleto from './Esqueleto.jsx'
 
 const CADA = [1, 2, 3, 5, 7, 14]
 const HORAS = Array.from({ length: 15 }, (_, i) => i + 6) // 06:00 a 20:00
@@ -23,6 +24,9 @@ const reglasDe = (e) => ({
   dias_estancada_admin: e.dias_estancada_admin,
   dias_escalamiento: e.dias_escalamiento,
 })
+
+// El registro puede tener cientos de correos: se pintan de 50 en 50.
+const POR_TANDA = 50
 
 export function SelectorDias({ etiqueta, valor, opciones, nunca, onCambio, formato = (n) => `cada ${n} día${n > 1 ? 's' : ''}` }) {
   return (
@@ -50,6 +54,7 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
   const [incidencias, setIncidencias] = useState([])
   const [registro, setRegistro] = useState(null)
   const [filtro, setFiltro] = useState('todos')
+  const [visibles, setVisibles] = useState(POR_TANDA)
   const colaboradores = miembros.filter((m) => m.rol === 'colaborador')
   const [persona, setPersona] = useState(colaboradores[0]?.usuario_id ?? '')
   const [intento, setIntento] = useState(0)
@@ -246,7 +251,6 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
                 })}
               </ul>
               {vista.length > 5 && <p className="celda-sec">…y {vista.length - 5} más.</p>}
-              <span className="correo__boton">Abrir Mi trabajo</span>
               <p className="celda-sec">Así llega con «Enviar ahora». Sin código del repositorio.</p>
             </div>
           )}
@@ -265,7 +269,10 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
                 type="button"
                 className={`chip ${filtro === clave ? 'chip--activo' : ''}`}
                 aria-pressed={filtro === clave}
-                onClick={() => setFiltro(clave)}
+                onClick={() => {
+                  setFiltro(clave)
+                  setVisibles(POR_TANDA)
+                }}
               >
                 {texto} <span className="chip__cantidad">{conteo(clave)}</span>
               </button>
@@ -273,9 +280,7 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
           </div>
         </div>
         {registro === null ? (
-          <p className="estado-vacio" role="status">
-            Cargando registro…
-          </p>
+          <Esqueleto forma="tabla" etiqueta="Cargando registro…" />
         ) : filas.length === 0 ? (
           <p className="estado-vacio">Todavía no hay envíos{filtro !== 'todos' ? ' con este resultado' : ''}.</p>
         ) : (
@@ -291,7 +296,7 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
                 </tr>
               </thead>
               <tbody>
-                {filas.map((n) => (
+                {filas.slice(0, visibles).map((n) => (
                   <tr key={n.id}>
                     <td>{formatearFecha(n.creado_en)}</td>
                     <td>
@@ -310,6 +315,11 @@ export default function RecordatoriosEquipo({ equipoId, datos, recargar }) {
                 ))}
               </tbody>
             </table>
+            {filas.length > visibles && (
+              <button type="button" className="btn-tabla" onClick={() => setVisibles((v) => v + POR_TANDA)}>
+                Mostrar más ({filas.length - visibles} restantes)
+              </button>
+            )}
           </div>
         )}
       </section>

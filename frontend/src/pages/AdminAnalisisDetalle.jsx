@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
+import Esqueleto from '../components/Esqueleto.jsx'
 import { ESTADOS_ANALISIS, ESTADOS_HALLAZGO } from '../constants/estados.js'
-import { obtenerAnalisis } from '../services/adminService.js'
-import { ORDEN_NIVEL, claveUI, etiquetaNivel } from '../utils/severidad.js'
+import { listarHallazgos, obtenerAnalisis } from '../services/adminService.js'
+import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { formatearFecha } from '../utils/formato.js'
 
 const POR_PAGINA = 20
@@ -15,6 +16,8 @@ export default function AdminAnalisisDetalle() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [pagina, setPagina] = useState(1)
+  const [hallazgos, setHallazgos] = useState(null)
+  const [total, setTotal] = useState(0)
   const seccionHallazgos = useRef(null)
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export default function AdminAnalisisDetalle() {
     setError('')
     setAnalisis(null)
     setPagina(1)
-    obtenerAnalisis(id).then(({ data, error: fallo }) => {
+    obtenerAnalisis(id, { conHallazgos: false }).then(({ data, error: fallo }) => {
       if (!activo) return
       if (fallo) setError('No se pudo cargar el análisis.')
       else if (!data) setError('No existe un análisis con ese identificador.')
@@ -35,17 +38,26 @@ export default function AdminAnalisisDetalle() {
     }
   }, [id])
 
-  const hallazgos = useMemo(
-    () =>
-      [...(analisis?.hallazgos ?? [])].sort(
-        (a, b) => (ORDEN_NIVEL[a.severidad] ?? 9) - (ORDEN_NIVEL[b.severidad] ?? 9)
-      ),
-    [analisis]
-  )
+  // Paginación en la base: solo se descargan los 20 hallazgos de la página, ya ordenados por gravedad.
+  useEffect(() => {
+    let activo = true
+    setHallazgos(null)
+    listarHallazgos(id, pagina, POR_PAGINA).then(({ data, error: fallo }) => {
+      if (!activo) return
+      if (fallo) setError('No se pudieron cargar los hallazgos.')
+      else {
+        setHallazgos(data.filas)
+        setTotal(data.total)
+      }
+    })
+    return () => {
+      activo = false
+    }
+  }, [id, pagina])
 
-  const paginas = Math.max(1, Math.ceil(hallazgos.length / POR_PAGINA))
+  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA))
   const inicio = (pagina - 1) * POR_PAGINA
-  const visibles = hallazgos.slice(inicio, inicio + POR_PAGINA)
+  const visibles = hallazgos ?? []
 
   function irAPagina(n) {
     setPagina(n)
@@ -66,11 +78,7 @@ export default function AdminAnalisisDetalle() {
         Volver al panel
       </Link>
 
-      {cargando && (
-        <p className="estado-vacio" role="status">
-          Cargando análisis…
-        </p>
-      )}
+      {cargando && <Esqueleto forma="tarjetas" cantidad={3} etiqueta="Cargando análisis…" />}
       {!cargando && error && (
         <p className="estado-vacio" role="alert">
           {error}
@@ -153,9 +161,11 @@ export default function AdminAnalisisDetalle() {
 
           <section className="panel" aria-label="Hallazgos" ref={seccionHallazgos}>
             <div className="panel__cabecera">
-              <h2>Hallazgos ({hallazgos.length})</h2>
+              <h2>Hallazgos ({analisis.total?.[0]?.count ?? total})</h2>
             </div>
-            {hallazgos.length === 0 ? (
+            {hallazgos === null ? (
+              <Esqueleto forma="tabla" cantidad={6} etiqueta="Cargando hallazgos…" />
+            ) : total === 0 ? (
               <p className="estado-vacio">Este análisis no tiene hallazgos registrados.</p>
             ) : (
               <>
@@ -207,7 +217,7 @@ export default function AdminAnalisisDetalle() {
               {paginas > 1 && (
                 <div className="panel__pie">
                   <p aria-live="polite">
-                    Hallazgos {inicio + 1} a {inicio + visibles.length} de {hallazgos.length} · Página {pagina} de{' '}
+                    Hallazgos {inicio + 1} a {inicio + visibles.length} de {total} · Página {pagina} de{' '}
                     {paginas}
                   </p>
                   <nav className="paginacion" aria-label="Páginas de hallazgos">

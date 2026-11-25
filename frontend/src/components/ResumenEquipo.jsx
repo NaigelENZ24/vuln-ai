@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import RepositoriosEquipo from './RepositoriosEquipo.jsx'
+import Esqueleto from './Esqueleto.jsx'
 import { metricasEquipo } from '../services/incidenciasService.js'
 
 // Tramos del puntaje: el texto acompaña siempre al color.
@@ -35,6 +36,7 @@ export default function ResumenEquipo({ equipoId }) {
           {error}
         </p>
       )}
+      {!m && !error && <Esqueleto forma="tarjetas" cantidad={4} etiqueta="Cargando indicadores…" />}
       {m && (
         <section className="kpis" aria-label="Indicadores del equipo">
           <div className="kpi" style={{ '--c': t.color }}>

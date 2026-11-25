@@ -1,5 +1,6 @@
 import json
 import logging
+from functools import cache
 
 from app.config import LLM_API_KEY, LLM_MODEL, LLM_PROVIDER
 
@@ -80,18 +81,26 @@ def _anthropic(modelo, sistema, mensajes, esquema):
     return "".join(b.text for b in respuesta.content if b.type == "text")
 
 
-def _gemini(modelo, sistema, mensajes, esquema):
+@cache
+def _cliente_gemini():
     from google import genai
     from google.genai import types
 
     # El plan gratuito responde 429/503 cuando hay mucha demanda: reintentar con espera creciente.
     reintentos = types.HttpRetryOptions(attempts=3, initial_delay=2, max_delay=15, http_status_codes=[429, 500, 503])
-    cliente = genai.Client(api_key=LLM_API_KEY, http_options=types.HttpOptions(retry_options=reintentos))
+    return genai.Client(api_key=LLM_API_KEY, http_options=types.HttpOptions(retry_options=reintentos))
+
+
+def _gemini(modelo, sistema, mensajes, esquema):
+    cliente = _cliente_gemini()  # uno por proceso: reutiliza la conexión
     contenido = [
         {"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text": m["content"]}]}
         for m in mensajes
     ]
     config = {"system_instruction": sistema}
+    if modelo.startswith("gemini-3"):
+        # Explicar hallazgos ya detectados no necesita razonamiento largo: responde varias veces más rápido.
+        config["thinking_config"] = {"thinking_level": "low"}
     if esquema:
         config["response_mime_type"] = "application/json"
         config["response_json_schema"] = esquema

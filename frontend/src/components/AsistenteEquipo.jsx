@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FolderGit2 } from 'lucide-react'
 import ChatAsistente from './ChatAsistente.jsx'
 import { obtenerChatEquipo } from '../services/incidenciasService.js'
 import { preguntarEquipo } from '../services/analyzerApi.js'
@@ -19,8 +20,22 @@ const TEMAS = [
   ['Gestión', 'qué priorizar o reasignar. Nunca escribe código ni corrige nada.'],
 ]
 
-// Asistente IA del equipo: solo el administrador. El sistema calcula las cifras y la IA las redacta.
-export default function AsistenteEquipo({ equipoId }) {
+const SIN_DATOS = {
+  'sin-repos': {
+    titulo: 'Agrega un repositorio para empezar',
+    texto:
+      'El asistente responde con los datos de tu equipo. Vincula el repositorio de tu proyecto en la pestaña Resumen y ejecuta un análisis; cuando termine, podrás hablar con tu asistente IA.',
+  },
+  'sin-analisis': {
+    titulo: 'Ejecuta un análisis para empezar',
+    texto:
+      'Tu repositorio ya está vinculado, pero todavía no terminó ningún análisis. Ejecútalo desde la pestaña Resumen; cuando termine, podrás hablar con tu asistente IA.',
+  },
+}
+
+// Asistente IA del equipo: el administrador o el líder del equipo. El sistema calcula las cifras y la IA las redacta.
+// sinDatos: 'sin-repos' | 'sin-analisis' | null. Sin datos no se muestra el chat (el servicio también lo rechaza).
+export default function AsistenteEquipo({ equipoId, sinDatos = null, irAResumen }) {
   const [mensajes, setMensajes] = useState([])
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -58,16 +73,29 @@ export default function AsistenteEquipo({ equipoId }) {
 
   return (
     <div className="asistente">
-      <ChatAsistente
-        titulo="Asistente IA del equipo"
-        intro="Pregunta cómo va el equipo en lenguaje natural. Las cifras salen del sistema; la IA solo las explica."
-        sugerencias={SUGERENCIAS}
-        pistaDeshabilitado={quedan === 0 ? 'Llegaste al límite de preguntas de hoy' : 'Esperando la respuesta…'}
-        habilitado={!enviando && quedan > 0}
-        mensajes={mensajes}
-        onEnviar={enviar}
-        error={error}
-      />
+      {sinDatos ? (
+        <section className="panel vacio-equipos" role="status">
+          <FolderGit2 size={28} aria-hidden="true" />
+          <h2>{SIN_DATOS[sinDatos].titulo}</h2>
+          <p>{SIN_DATOS[sinDatos].texto}</p>
+          {irAResumen && (
+            <button type="button" className="btn-primario" onClick={irAResumen}>
+              Ir a Resumen
+            </button>
+          )}
+        </section>
+      ) : (
+        <ChatAsistente
+          titulo="Asistente IA del equipo"
+          intro="Pregunta cómo va el equipo en lenguaje natural. Las cifras salen del sistema; la IA solo las explica."
+          sugerencias={SUGERENCIAS}
+          pistaDeshabilitado={quedan === 0 ? 'Llegaste al límite de preguntas de hoy' : 'Esperando la respuesta…'}
+          habilitado={!enviando && quedan > 0}
+          mensajes={mensajes}
+          onEnviar={enviar}
+          error={error}
+        />
+      )}
       <aside className="panel asistente__ayuda" aria-label="Qué puede responder">
         <h2>Qué puede responder</h2>
         <ul>
@@ -78,7 +106,8 @@ export default function AsistenteEquipo({ equipoId }) {
           ))}
         </ul>
         <p className="celda-sec">
-          Solo tú ves este asistente, porque compara a las personas del equipo. La conversación queda guardada.
+          Solo el administrador y el líder del equipo ven este asistente, porque compara a las personas. La conversación
+          queda guardada.
         </p>
       </aside>
     </div>

@@ -56,7 +56,7 @@ export default function PanelInvitar({ equipoId, equipoVacio, onInvitada }) {
   }
 
   return (
-    <section className={`plegable ${abierto ? 'plegable--abierto' : ''}`}>
+    <section className={`plegable ${abierto ? 'plegable--abierto' : ''}`} data-tutorial="invitar">
       <button
         type="button"
         className="plegable__cabecera"

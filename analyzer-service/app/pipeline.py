@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from app import incidencias, llm_service, scanner
@@ -72,11 +73,14 @@ def _ejecutar(analisis_id, clone_url, rama, vigilada):
         )
         commit = subprocess.run(["git", "-C", destino, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
 
-        bandit = scanner.ejecutar_bandit(destino)
+        # Bandit y Semgrep son contenedores independientes: correrlos a la vez ahorra casi todo el tiempo del más corto.
         scripts = os.path.join(carpeta, "inline")
         os.makedirs(scripts)
-        scanner.extraer_scripts(destino, scripts)
-        semgrep = scanner.ejecutar_semgrep(destino, scripts)
+        with ThreadPoolExecutor(max_workers=1) as hilo:
+            futuro_bandit = hilo.submit(scanner.ejecutar_bandit, destino)
+            scanner.extraer_scripts(destino, scripts)
+            semgrep = scanner.ejecutar_semgrep(destino, scripts)
+            bandit = futuro_bandit.result()
         hallazgos = [scanner.a_hallazgo(r) for r in bandit.get("results", [])]
         hallazgos += [scanner.a_hallazgo_semgrep(r, destino) for r in semgrep.get("results", [])]
         incidencias.asignar_huellas(hallazgos, destino)

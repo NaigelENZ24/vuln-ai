@@ -1,3 +1,4 @@
+import { compartir } from './compartir.js'
 import { supabase } from './supabaseClient.js'
 
 // Mensajes claros para los errores que vienen de las reglas de la base.
@@ -7,6 +8,7 @@ function mensaje(error, porDefecto) {
   if (texto.includes('no es válida o expiró')) return 'Esta invitación no es válida o expiró.'
   if (texto.includes('github_usuario')) return 'El usuario de GitHub solo puede tener letras, números y guiones.'
   if (texto.includes('equipos_nombre_check')) return 'El nombre debe tener entre 1 y 80 caracteres.'
+  if (texto.includes('equipos que tienes aprobados')) return 'Ya usaste todos los equipos que tienes aprobados.'
   return porDefecto
 }
 
@@ -22,10 +24,10 @@ const n = (conteo) => conteo?.[0]?.count ?? 0
 
 // ---------- Administrador ----------
 
-export async function listarEquipos() {
+export const listarEquipos = compartir(async function listarEquipos() {
   const r = await supabase
     .from('equipos')
-    .select('id, nombre, descripcion, creado_en, miembros:miembros_equipo(count), pendientes:invitaciones(count)')
+    .select('id, nombre, descripcion, creado_en, creado_por, lider:perfiles!creado_por(nombre, rol), miembros:miembros_equipo(count), pendientes:invitaciones(count)')
     // Solo cuenta invitaciones pendientes; no filtra la lista de equipos.
     .is('pendientes.aceptada_en', null)
     .is('pendientes.revocada_en', null)
@@ -34,18 +36,15 @@ export async function listarEquipos() {
   return {
     data: r.data.map((e) => ({ ...e, miembros: n(e.miembros), pendientes: n(e.pendientes) })),
   }
-}
+})
 
+// La base decide: el admin sin límite; el líder hasta su cupo aprobado.
 export async function crearEquipo({ nombre, descripcion }) {
-  const r = await supabase
-    .from('equipos')
-    .insert({ nombre: nombre.trim(), descripcion: descripcion.trim() || null })
-    .select('id')
-    .single()
-  return resultado(r, 'No se pudo crear el equipo.', 'crearEquipo')
+  const r = await supabase.rpc('crear_equipo', { p_nombre: nombre.trim(), p_descripcion: descripcion.trim() || null })
+  return resultado({ data: r.data ? { id: r.data } : null, error: r.error }, 'No se pudo crear el equipo.', 'crearEquipo')
 }
 
-export async function obtenerEquipo(id) {
+export const obtenerEquipo = compartir(async function obtenerEquipo(id) {
   const [equipo, miembros, invitaciones, repos] = await Promise.all([
     supabase.from('equipos').select('*').eq('id', id).maybeSingle(),
     supabase
@@ -62,7 +61,7 @@ export async function obtenerEquipo(id) {
       .order('creada_en', { ascending: false }),
     supabase
       .from('repositorios')
-      .select('id, nombre, ramas_vigiladas(id, rama, es_principal)')
+      .select('id, nombre, ramas_vigiladas(id, rama, es_principal, ultimo_sha)')
       .eq('equipo_id', id)
       .order('nombre'),
   ])
@@ -71,7 +70,7 @@ export async function obtenerEquipo(id) {
   return {
     data: { equipo: equipo.data, miembros: miembros.data, invitaciones: invitaciones.data, repos: repos.data },
   }
-}
+})
 
 // Rama de trabajo de un colaborador en un repositorio. ramaId null = vuelve a la principal.
 export async function asignarRama({ usuarioId, repositorioId, ramaId }) {
@@ -79,7 +78,7 @@ export async function asignarRama({ usuarioId, repositorioId, ramaId }) {
   return resultado(r, 'No se pudo asignar la rama.', 'asignarRama')
 }
 
-export async function colaboradoresDe(equipoId) {
+export const colaboradoresDe = compartir(async function colaboradoresDe(equipoId) {
   const r = await supabase
     .from('miembros_equipo')
     .select('usuario_id, perfiles(nombre)')
@@ -87,7 +86,7 @@ export async function colaboradoresDe(equipoId) {
     .eq('rol', 'colaborador')
   if (r.error) return resultado(r, 'No se pudieron cargar los colaboradores.', 'colaboradoresDe')
   return { data: r.data.map((m) => ({ usuario_id: m.usuario_id, nombre: m.perfiles?.nombre ?? '—' })) }
-}
+})
 
 // Devuelve el código una sola vez; en la base solo queda su hash.
 export async function crearInvitacion({ equipoId, correo, rol, github }) {
@@ -130,19 +129,19 @@ export async function quitarMiembro({ equipoId, usuarioId }) {
 
 // ---------- Persona con sesión ----------
 
-export async function misEquipos(usuarioId) {
+export const misEquipos = compartir(async function misEquipos(usuarioId) {
   const r = await supabase
     .from('miembros_equipo')
     .select('equipo_id, rol, unido_en, equipos(nombre, descripcion, limite_en_correccion)')
     .eq('usuario_id', usuarioId)
     .order('unido_en')
   return resultado(r, 'No se pudieron cargar tus equipos.', 'misEquipos')
-}
+})
 
-export async function misInvitaciones() {
+export const misInvitaciones = compartir(async function misInvitaciones() {
   const r = await supabase.rpc('mis_invitaciones')
   return resultado(r, 'No se pudieron cargar tus invitaciones.', 'misInvitaciones')
-}
+})
 
 export async function aceptarInvitacion({ codigo = null, id = null }) {
   const r = await supabase.rpc('aceptar_invitacion', { p_codigo: codigo, p_id: id })

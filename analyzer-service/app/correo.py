@@ -38,6 +38,38 @@ def mensaje_invitacion(equipo, rol, enlace):
     }
 
 
+INTEGRANTES = {"2-4": "2 a 4 personas", "5-10": "5 a 10 personas", "mas-10": "Más de 10 personas"}
+
+
+def mensaje_solicitud(nombre, correo_solicitante, solicitud, enlace):
+    """Aviso al administrador de una solicitud nueva para ser líder de equipo. Todo el texto del usuario va escapado."""
+    equipo = " ".join(solicitud["nombre_equipo"].split())
+    n = solicitud["equipos_solicitados"]
+    datos = [
+        ("Solicitante", f"{nombre} ({correo_solicitante})"),
+        ("Equipo", equipo),
+        ("Integrantes", INTEGRANTES[solicitud["integrantes"]]),
+        ("Equipos que necesita", str(n)),
+        ("Descripción", solicitud.get("descripcion") or "—"),
+    ]
+    filas = "".join(f'<tr><td style="padding:4px 12px 4px 0;color:#57606a">{escape(k)}</td><td><strong>{escape(v)}</strong></td></tr>'
+                    for k, v in datos)
+    return {
+        "subject": f"Nueva solicitud de equipo: {equipo}",
+        "textContent": "Nueva solicitud para crear equipos en Centinela:\n\n"
+                       + "\n".join(f"{k}: {v}" for k, v in datos)
+                       + f"\n\nRevísala en el panel: {enlace}\n",
+        "htmlContent": f"""<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:560px;color:#1f2328">
+  <p style="font-weight:700;color:#1a6b50">Centinela</p>
+  <p>Hay una solicitud nueva para crear {"un equipo" if n == 1 else f"{n} equipos"} de trabajo:</p>
+  <table style="font-size:14px;margin:8px 0 16px">{filas}</table>
+  <p><a href="{escape(enlace)}" style="display:inline-block;padding:12px 20px;background:#1a6b50;color:#ffffff;
+     border-radius:8px;text-decoration:none;font-weight:700">Revisar solicitud</a></p>
+  <p style="font-size:12px;color:#57606a">Si la apruebas, esa persona podrá crear y gestionar solo sus propios equipos.</p>
+</div>""",
+    }
+
+
 ETIQUETA = {"alto": ("Alta", "#bc4c00", "#fff1e5"), "medio": ("Media", "#7d4e00", "#fff8c5"), "bajo": ("Baja", "#0550ae", "#ddf4ff")}
 
 

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
 import { ESTADOS_ANALISIS } from '../constants/estados.js'
-import { listarAnalisis, obtenerResumen } from '../services/adminService.js'
+import { listarAnalisis, listarUsuarios, obtenerResumen } from '../services/adminService.js'
 import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { formatearFecha } from '../utils/formato.js'
+import Esqueleto from '../components/Esqueleto.jsx'
 
 const COLUMNAS = [
   { clave: 'repo', etiqueta: 'Repositorio' },
@@ -32,6 +33,8 @@ export default function AdminDashboard() {
 
   const [busqueda, setBusqueda] = useState('')
   const [estado, setEstado] = useState('todos')
+  const [usuarios, setUsuarios] = useState([])
+  const [usuario, setUsuario] = useState('todos')
   const [porPagina, setPorPagina] = useState(10)
   const [pagina, setPagina] = useState(1)
   const [orden, setOrden] = useState({ clave: 'iniciadoEn', dir: 'desc' })
@@ -40,13 +43,14 @@ export default function AdminDashboard() {
     let activo = true
     setCargando(true)
     setError('')
-    Promise.all([obtenerResumen(), listarAnalisis()]).then(([r, l]) => {
+    Promise.all([obtenerResumen(), listarAnalisis(), listarUsuarios()]).then(([r, l, u]) => {
       if (!activo) return
       if (r.error || l.error) {
         setError('No se pudieron cargar los datos. Inténtalo de nuevo.')
       } else {
         setResumen(r.data)
         setFilas(l.data)
+        setUsuarios(u.data ?? [])
       }
       setCargando(false)
     })
@@ -62,6 +66,7 @@ export default function AdminDashboard() {
       .filter(
         (f) =>
           (estado === 'todos' || f.estado === estado) &&
+          (usuario === 'todos' || f.usuarioId === usuario) &&
           (!q || `${f.repo} ${f.usuario} ${f.correo} ${f.consulta}`.toLowerCase().includes(q))
       )
       .sort((a, b) => {
@@ -73,7 +78,7 @@ export default function AdminDashboard() {
             : String(x).localeCompare(String(y), 'es')
         return c * signo
       })
-  }, [filas, busqueda, estado, orden])
+  }, [filas, busqueda, estado, usuario, orden])
 
   const total = filtradas.length
   const paginas = Math.max(1, Math.ceil(total / porPagina))
@@ -119,9 +124,7 @@ export default function AdminDashboard() {
         </div>
 
         {cargando && (
-          <p className="estado-vacio" role="status">
-            Cargando análisis…
-          </p>
+          <Esqueleto forma="tabla" etiqueta="Cargando análisis…" />
         )}
 
         {!cargando && error && (
@@ -167,6 +170,26 @@ export default function AdminDashboard() {
               </label>
 
               <div className="herramienta">
+                <label className="herramienta">
+                  Usuario
+                  <select
+                    value={usuario}
+                    onChange={(e) => {
+                      setUsuario(e.target.value)
+                      setPagina(1)
+                    }}
+                  >
+                    <option value="todos">Todos ({usuarios.length})</option>
+                    {usuarios.map((u) => {
+                      const cantidad = filas.filter((f) => f.usuarioId === u.id).length
+                      return (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre} · {u.correo} ({cantidad} análisis)
+                        </option>
+                      )
+                    })}
+                  </select>
+                </label>
                 <label className="herramienta">
                   Estado
                   <select
@@ -270,7 +293,11 @@ export default function AdminDashboard() {
             </div>
 
             {total === 0 && (
-              <p className="estado-vacio">Ningún análisis coincide con la búsqueda.</p>
+              <p className="estado-vacio">
+                {usuario !== 'todos' && !filas.some((f) => f.usuarioId === usuario)
+                  ? 'Este usuario todavía no ha analizado ningún repositorio.'
+                  : 'Ningún análisis coincide con los filtros.'}
+              </p>
             )}
 
             <div className="panel__pie">

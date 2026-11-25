@@ -35,8 +35,15 @@ export const vincularRepositorio = (equipoId, repoUrl, ramas) =>
 
 export const analizarRama = (ramaId) => llamar(`/ramas/${ramaId}/analizar`, {})
 
+// Revisa solo el archivo de la incidencia (la incidencia debe estar en revisión).
+export const verificarIncidencia = (incidenciaId) => llamar(`/incidencias/${incidenciaId}/verificar`, {})
+
 export const ejecutarRecordatorios = (equipoId) => llamar(`/equipos/${equipoId}/recordatorios/ejecutar`, {})
 
 export const preguntarEquipo = (equipoId, pregunta) => llamar(`/equipos/${equipoId}/asistente`, { pregunta })
 
 export const enviarInvitacion = (equipoId, codigo) => llamar('/invitaciones/enviar', { equipo_id: equipoId, codigo })
+
+// Pide al administrador poder crear equipos (líder de equipo). El servicio la guarda y le avisa por correo.
+export const enviarSolicitudEquipo = ({ nombreEquipo, integrantes, equipos, descripcion }) =>
+  llamar('/solicitudes', { nombre_equipo: nombreEquipo, integrantes, equipos, descripcion })

@@ -300,6 +300,76 @@ class PruebasBasicas(unittest.TestCase):
             with self.assertRaises(correo.CorreoNoEnviado):
                 correo.enviar("ana@x.com", {"subject": "a", "textContent": "b", "htmlContent": "c"})
 
+    def test_verificacion_ruta_segura(self):
+        from app.verificacion import ruta_segura
+
+        with tempfile.TemporaryDirectory() as carpeta:
+            self.assertTrue(ruta_segura(carpeta, "app/views.py").startswith(carpeta))
+            for mala in ("../fuera.py", "app/../../fuera.py", "/etc/passwd"):
+                with self.assertRaises(ValueError):
+                    ruta_segura(carpeta, mala)
+
+    def test_verificacion_solo_del_archivo(self):
+        from app import incidencias, verificacion
+
+        codigo = b"x = 1\neval(dato)\n"
+        # Huella de la incidencia tal como la habría guardado el análisis completo.
+        with tempfile.TemporaryDirectory() as ruta:
+            os.makedirs(os.path.join(ruta, "app"))
+            with open(os.path.join(ruta, "app", "v.py"), "wb") as f:
+                f.write(codigo)
+            h = [{"regla_id": "B307", "archivo": "app/v.py", "linea": 2, "_fin": 2, "fragmento_codigo": "eval(dato)"}]
+            incidencias.asignar_huellas(h, ruta)
+        inc = {"id": "i1", "huella": h[0]["huella"], "archivo": "app/v.py", "regla_id": "B307", "rama": "main"}
+
+        def correr(contenido):
+            ops = []
+            tabla = mock.Mock()
+            tabla.return_value.update.side_effect = lambda d: ops.append(("update", d)) or mock.DEFAULT
+            tabla.return_value.insert.side_effect = lambda d: ops.append(("insert", d)) or mock.DEFAULT
+            n = next((i for i, l in enumerate((contenido or b"").splitlines(), 1) if b"eval" in l), None)
+            resultado_bandit = {"results": [{"filename": "/code/app/v.py", "line_number": n, "line_range": [n], "test_id": "B307",
+                                             "issue_text": "eval", "issue_severity": "MEDIUM", "issue_confidence": "HIGH",
+                                             "code": "eval(dato)"}] if contenido and b"eval" in contenido else []}
+            with mock.patch.object(verificacion.supabase, "table", tabla), \
+                 mock.patch.object(verificacion.github_service, "validar_rama", return_value="abc1234def"), \
+                 mock.patch.object(verificacion.github_service, "descargar_archivo", return_value=contenido), \
+                 mock.patch.object(verificacion.github_service, "autor_ultimo_commit", return_value="ana"), \
+                 mock.patch.object(verificacion.scanner, "ejecutar_bandit", return_value=resultado_bandit) as bandit, \
+                 mock.patch.object(verificacion.scanner, "ejecutar_semgrep") as semgrep:
+                verificacion.ejecutar(inc, "o", "r")
+            semgrep.assert_not_called()  # regla de Bandit: solo corre Bandit
+            return dict(ops)
+
+        sigue = correr(b"import os\n\nx = 1\neval(dato)\n")  # movida de línea, pero sin corregir
+        self.assertEqual((sigue["update"]["estado"], sigue["update"]["linea_actual"]), ("en_correccion", 4))
+        self.assertEqual(sigue["insert"]["tipo"], "verificacion_fallida")
+
+        corregida = correr(b"x = 1\njson.loads(dato)\n")
+        self.assertEqual((corregida["update"]["estado"], corregida["update"]["motivo_cierre"]), ("resuelta", "verificada"))
+        self.assertEqual((corregida["update"]["commit_correccion"], corregida["update"]["corregida_por"]), ("abc1234def", "ana"))
+
+        borrada = correr(None)
+        self.assertEqual(borrada["update"]["motivo_cierre"], "archivo_eliminado")
+
+    def test_correo_de_solicitud_escapa_datos(self):
+        from app import correo
+        m = correo.mensaje_solicitud("Ana <b>", "ana@x.com", {"nombre_equipo": "Equipo\n<script>", "integrantes": "5-10",
+                                                               "equipos_solicitados": 2, "descripcion": "a & b"}, "http://x/admin/solicitudes")
+        self.assertNotIn("\n", m["subject"])
+        self.assertNotIn("<script>", m["htmlContent"])
+        self.assertIn("&lt;script&gt;", m["htmlContent"])
+        self.assertIn("5 a 10 personas", m["textContent"])
+        self.assertIn("2 equipos", m["htmlContent"])
+
+    def test_solicitud_solo_acepta_opciones(self):
+        from pydantic import ValidationError
+        from app.main import SolicitudEquipo
+        SolicitudEquipo(nombre_equipo="Equipo", integrantes="2-4", equipos=1)
+        for malo in ({"integrantes": "7"}, {"equipos": 4}, {"equipos": 0}, {"nombre_equipo": ""}):
+            with self.assertRaises(ValidationError):
+                SolicitudEquipo(**{"nombre_equipo": "Equipo", "integrantes": "2-4", "equipos": 1, **malo})
+
 
 if __name__ == "__main__":
     unittest.main()

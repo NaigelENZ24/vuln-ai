@@ -8,7 +8,7 @@ import HallazgoDetalle from '../components/HallazgoDetalle.jsx'
 import ChatAsistente from '../components/ChatAsistente.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { iniciarAnalisis, preguntarIA } from '../services/analyzerApi.js'
-import { obtenerAnalisis } from '../services/adminService.js'
+import { estadoAnalisis, obtenerAnalisis } from '../services/adminService.js'
 import { obtenerMensajes } from '../services/analisisService.js'
 import { aHallazgoUI, riesgoGlobal } from '../utils/analisisUI.js'
 import { MENSAJE_URL_INVALIDA, parseRepoGitHub } from '../utils/github.js'
@@ -58,17 +58,24 @@ export default function Analisis() {
     setSeleccionado(null)
     setError('')
 
-    async function cargar() {
-      const { data, error: fallo } = await obtenerAnalisis(id)
+    // Mientras corre solo se consulta el estado (consulta mínima); los hallazgos se piden una vez, al terminar.
+    async function cargar(completo) {
+      const { data, error: fallo } = await (completo ? obtenerAnalisis(id) : estadoAnalisis(id))
       if (!activo) return
       if (fallo || !data) {
         setError(fallo ? 'No se pudo cargar el análisis.' : 'No existe un análisis con ese identificador.')
         return
       }
-      setAnalisis(data)
-      if (EN_CURSO.includes(data.estado)) temporizador = setTimeout(cargar, INTERVALO_MS)
+      if (EN_CURSO.includes(data.estado)) {
+        setAnalisis(data)
+        temporizador = setTimeout(() => cargar(false), INTERVALO_MS)
+      } else if (!completo) {
+        cargar(true)
+      } else {
+        setAnalisis(data)
+      }
     }
-    cargar()
+    cargar(true)
     return () => {
       activo = false
       clearTimeout(temporizador)
@@ -89,6 +96,16 @@ export default function Analisis() {
   }, [id, completado, usuario])
 
   const hallazgos = useMemo(() => (analisis?.hallazgos ?? []).map(aHallazgoUI), [analisis])
+  // Memorizados: el chat re-renderiza esta página en cada mensaje y así el resumen y la lista no se rehacen.
+  const riesgo = useMemo(() => riesgoGlobal(hallazgos), [hallazgos])
+  const resumenIA = analisis?.resumen_ia
+  const interpretacion = useMemo(
+    () =>
+      resumenIA
+        ? { estado: 'ok', parrafos: resumenIA.split(/\n\s*\n/) }
+        : { estado: 'error', mensaje: 'La IA no pudo generar la interpretación. Se muestran los hallazgos de Bandit.' },
+    [resumenIA]
+  )
   const repo = analisis?.repositorios
   const info = parseRepoGitHub(repo?.url ?? repoParam)
 
@@ -194,15 +211,8 @@ export default function Analisis() {
               <>
                 <ResumenRiesgo
                   hallazgos={hallazgos}
-                  riesgoGlobal={riesgoGlobal(hallazgos)}
-                  interpretacion={
-                    analisis.resumen_ia
-                      ? { estado: 'ok', parrafos: analisis.resumen_ia.split(/\n\s*\n/) }
-                      : {
-                          estado: 'error',
-                          mensaje: 'La IA no pudo generar la interpretación. Se muestran los hallazgos de Bandit.',
-                        }
-                  }
+                  riesgoGlobal={riesgo}
+                  interpretacion={interpretacion}
                 />
                 {seleccionado && <HallazgoDetalle hallazgo={seleccionado} onCerrar={() => setSeleccionado(null)} />}
                 <ListaHallazgos hallazgos={hallazgos} onAbrir={setSeleccionado} />

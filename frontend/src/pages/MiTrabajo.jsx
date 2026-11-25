@@ -10,6 +10,7 @@ import { ordenarPlan, plazo, ramaDeTrabajo, ubicacion } from '../utils/incidenci
 import { formatearFecha } from '../utils/formato.js'
 import '../styles/analisis.css'
 import '../styles/equipos.css'
+import Esqueleto from '../components/Esqueleto.jsx'
 
 const ROLES = { colaborador: 'Colaborador', observador: 'Observador (solo lectura)' }
 
@@ -132,9 +133,7 @@ export default function MiTrabajo() {
         )}
 
         {esColaborador && datos === null && !error && (
-          <p className="vacio" role="status">
-            Cargando tu trabajo…
-          </p>
+          <Esqueleto forma="tarjetas" etiqueta="Cargando tu trabajo…" />
         )}
 
         {esColaborador && datos && datos.mias.length === 0 && (

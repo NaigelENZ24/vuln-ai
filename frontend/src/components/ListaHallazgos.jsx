@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { ChevronRight, Search } from 'lucide-react'
 import { SEVERIDADES } from '../constants/severidades.js'
 
 const ORDEN = Object.fromEntries(SEVERIDADES.map((s, i) => [s.clave, i]))
 const ETIQUETA = Object.fromEntries(SEVERIDADES.map((s) => [s.clave, s.etiqueta]))
 
-export default function ListaHallazgos({ hallazgos, onAbrir }) {
+function ListaHallazgos({ hallazgos, onAbrir }) {
   const [busqueda, setBusqueda] = useState('')
   const [severidad, setSeveridad] = useState('todas')
   const [categoria, setCategoria] = useState('todas')
@@ -97,3 +97,5 @@ export default function ListaHallazgos({ hallazgos, onAbrir }) {
     </section>
   )
 }
+// memo: el chat re-renderiza la página en cada mensaje; la lista solo cambia con los hallazgos.
+export default memo(ListaHallazgos)

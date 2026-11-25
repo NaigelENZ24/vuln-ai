@@ -11,7 +11,7 @@ import {
   resolverDescarte,
 } from '../services/incidenciasService.js'
 import { colaboradoresDe } from '../services/equiposService.js'
-import { analizarRama } from '../services/analyzerApi.js'
+import { verificarIncidencia } from '../services/analyzerApi.js'
 import { ESTADOS_INCIDENCIA } from '../constants/estados.js'
 import { claveUI, etiquetaNivel } from '../utils/severidad.js'
 import { plazo, textoCierre, ubicacion } from '../utils/incidencias.js'
@@ -33,6 +33,7 @@ const EVENTOS = {
   descarte_rechazado: 'Rechazó la revisión: vuelve a corrección',
   reabierta: 'Volvió a aparecer',
   verificacion_fallida: 'Verificación fallida',
+  verificacion_error: 'No se pudo verificar',
   resuelta: 'Resuelta',
 }
 
@@ -59,7 +60,7 @@ export default function Incidencia() {
       if (fallo) setError(fallo)
       else {
         setInc(data)
-        // Mientras se verifica, se actualiza sola para mostrar el resultado del re-análisis.
+        // Mientras se verifica, se actualiza sola para mostrar el resultado de la verificación.
         if (data?.estado === 'en_revision' && !data.descarte_solicitado) temporizador = setTimeout(recargar, 5000)
       }
     })
@@ -70,9 +71,11 @@ export default function Incidencia() {
   }, [id, intento])
 
   const equipoId = inc?.repositorios.equipo_id
+  // Admin, o líder (creador) del equipo de esta incidencia: asigna, libera y resuelve revisiones.
+  const gestiona = esAdmin || (Boolean(usuario) && inc?.repositorios.equipos?.creado_por === usuario.id)
   useEffect(() => {
-    if (esAdmin && equipoId) colaboradoresDe(equipoId).then(({ data }) => data && setColaboradores(data))
-  }, [esAdmin, equipoId])
+    if (gestiona && equipoId) colaboradoresDe(equipoId).then(({ data }) => data && setColaboradores(data))
+  }, [gestiona, equipoId])
 
   const historial = useMemo(() => {
     if (!inc) return []
@@ -94,8 +97,8 @@ export default function Incidencia() {
 
   const verificar = () =>
     ejecutar(cambiarEstado(inc.id, 'verificar'), async () => {
-      const { error: fallo } = inc.ramaId ? await analizarRama(inc.ramaId) : { error: 'La rama ya no está vigilada.' }
-      if (fallo) setAviso(`Quedó en revisión, pero no se pudo iniciar el re-análisis: ${fallo}`)
+      const { error: fallo } = await verificarIncidencia(inc.id)
+      if (fallo) setAviso(`Quedó en revisión, pero no se pudo iniciar la verificación: ${fallo}`)
     })
 
   async function enviarComentario(e) {
@@ -130,16 +133,18 @@ export default function Incidencia() {
   const esMia = inc.asignado_a === usuario.id
   const activa = ['abierta', 'en_correccion'].includes(inc.estado)
   const p = plazo(inc)
-  const fallida = inc.estado === 'en_correccion' && inc.eventos[0]?.tipo === 'verificacion_fallida' ? inc.eventos[0] : null
+  const ultimo = inc.eventos[0]
+  const fallida =
+    inc.estado === 'en_correccion' && ['verificacion_fallida', 'verificacion_error'].includes(ultimo?.tipo) ? ultimo : null
   const paso = PASOS.indexOf(inc.estado)
 
   return (
     <div className="analisis">
       <SiteHeader />
       <main className="analisis__contenedor inc">
-        <Link className="detalle__volver" to={esAdmin ? `/admin/equipos/${equipoId}` : '/mi-trabajo'}>
+        <Link className="detalle__volver" to={gestiona ? `/admin/equipos/${equipoId}` : '/mi-trabajo'}>
           <ArrowLeft size={16} aria-hidden="true" />
-          {esAdmin ? 'Seguimiento del equipo' : 'Mi trabajo'}
+          {gestiona ? 'Seguimiento del equipo' : 'Mi trabajo'}
         </Link>
 
         <div className="inc__cabecera">
@@ -154,7 +159,7 @@ export default function Incidencia() {
           <div className="inc__alerta" role="status">
             <AlertTriangle size={18} aria-hidden="true" />
             <p>
-              <strong>Verificación fallida:</strong> {fallida.nota} La incidencia volvió a «En corrección».
+              <strong>{EVENTOS[fallida.tipo]}:</strong> {fallida.nota} La incidencia volvió a «En corrección».
             </p>
           </div>
         )}
@@ -164,7 +169,7 @@ export default function Incidencia() {
             <p>
               {inc.descarte_solicitado
                 ? `En revisión del administrador: ${inc.asignado?.nombre ?? 'el colaborador'} indicó que no es una vulnerabilidad («${inc.motivo_descarte}»). No se re-analiza ni se usa la IA.`
-                : 'Verificando: Centinela está re-analizando la rama. Esta página se actualiza sola.'}
+                : `Verificando: Centinela revisa solo ${inc.archivo}, no todo el repositorio. Esta página se actualiza sola.`}
             </p>
           </div>
         )}
@@ -252,7 +257,7 @@ export default function Incidencia() {
                   </li>
                 ))}
               </ul>
-              {(esAdmin || esColab) && (
+              {(gestiona || esColab) && (
                 <form className="comentar" onSubmit={enviarComentario}>
                   <label htmlFor="comentario" className="celda-sec">
                     Agregar un comentario
@@ -337,7 +342,7 @@ export default function Incidencia() {
               </>
             )}
 
-            {esAdmin && inc.descarte_solicitado && (
+            {gestiona && inc.descarte_solicitado && (
               <div className="tarjeta-inc__descarte">
                 <span>
                   {inc.asignado?.nombre ?? 'El colaborador'} dice que no es una vulnerabilidad: «{inc.motivo_descarte}»
@@ -352,7 +357,7 @@ export default function Incidencia() {
                 </span>
               </div>
             )}
-            {esAdmin && !['resuelta', 'descartada'].includes(inc.estado) && (
+            {gestiona && !['resuelta', 'descartada'].includes(inc.estado) && (
               <label className="eq-campo eq-campo--ancho">
                 Responsable: liberar o pasar a otro colaborador
                 <select

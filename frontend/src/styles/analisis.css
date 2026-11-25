@@ -799,3 +799,9 @@
     justify-content: flex-start;
   }
 }
+
+/* Listas largas: el navegador no pinta las filas que están fuera de la pantalla. */
+.hallazgos > .hallazgo {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}

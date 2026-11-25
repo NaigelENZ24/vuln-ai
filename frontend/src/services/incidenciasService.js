@@ -1,3 +1,4 @@
+import { compartir } from './compartir.js'
 import { supabase } from './supabaseClient.js'
 
 function resultado({ data, error }, porDefecto, origen) {
@@ -13,10 +14,10 @@ const CAMPOS =
   'id, repositorio_id, rama, regla_id, titulo, archivo, linea_actual, severidad, estado, motivo_cierre, ' +
   'asignado_a, sugerido_a, fecha_limite, descarte_solicitado, motivo_descarte, veces_reabierta, ' +
   'commit_correccion, corregida_por, resuelta_en, creada_en, actualizada_en, ' +
-  'repositorios!inner(nombre, equipo_id), asignado:perfiles!asignado_a(nombre), sugerido:perfiles!sugerido_a(nombre)'
+  'repositorios!inner(nombre, equipo_id, equipos(creado_por)), asignado:perfiles!asignado_a(nombre), sugerido:perfiles!sugerido_a(nombre)'
 
 // ---------- Repositorios y ramas de un equipo ----------
-export async function listarRamas(equipoId) {
+export const listarRamas = compartir(async function listarRamas(equipoId) {
   const repos = await supabase
     .from('repositorios')
     .select('id, nombre, url, ramas_vigiladas(id, rama, es_principal, ultimo_sha)')
@@ -43,7 +44,7 @@ export async function listarRamas(equipoId) {
         .map((v) => ({ ...v, ultimo: ultimos[v.id] ?? null })),
     })),
   }
-}
+})
 
 // Borra el repositorio con sus ramas, análisis e incidencias (cascada en la base).
 // La RLS solo deja borrarlo a quien lo vinculó; .select() devuelve vacío si no lo borró.
@@ -55,7 +56,7 @@ export async function quitarRepositorio(id) {
 
 // ---------- Incidencias ----------
 // Abiertas, en corrección y en revisión, más las resueltas de los últimos «dias» días.
-export async function listarIncidenciasEquipo(equipoId, dias = 30) {
+export const listarIncidenciasEquipo = compartir(async function listarIncidenciasEquipo(equipoId, dias = 30) {
   const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
   const r = await supabase
     .from('incidencias')
@@ -66,10 +67,10 @@ export async function listarIncidenciasEquipo(equipoId, dias = 30) {
     // shortcut: tope de 1000 de Supabase; paginar si un equipo pasa de 1000 incidencias activas.
     .limit(1000)
   return resultado(r, 'No se pudieron cargar las incidencias.', 'listarIncidenciasEquipo')
-}
+})
 
 // Lo asignado a la persona y lo que nadie tomó en sus equipos (la RLS limita a sus equipos).
-export async function listarMiTrabajo(usuarioId) {
+export const listarMiTrabajo = compartir(async function listarMiTrabajo(usuarioId) {
   const [mias, libres, elegidas, principales] = await Promise.all([
     supabase.from('incidencias').select(CAMPOS).eq('asignado_a', usuarioId)
       .in('estado', ['abierta', 'en_correccion', 'en_revision']),
@@ -90,9 +91,9 @@ export async function listarMiTrabajo(usuarioId) {
       equipoDe: Object.fromEntries(principales.data.map((p) => [p.repositorio_id, p.repositorios?.equipo_id])),
     },
   }
-}
+})
 
-export async function obtenerIncidencia(id) {
+export const obtenerIncidencia = compartir(async function obtenerIncidencia(id) {
   const [inc, eventos, comentarios] = await Promise.all([
     supabase
       .from('incidencias')
@@ -122,7 +123,7 @@ export async function obtenerIncidencia(id) {
   return {
     data: { ...inc.data, ramaId: rama.data?.id ?? null, eventos: eventos.data, comentarios: comentarios.data },
   }
-}
+})
 
 // accion: tomar · corregir · liberar · verificar · solicitar_descarte
 export async function cambiarEstado(id, accion, nota = null) {
@@ -147,26 +148,26 @@ export async function comentar(id, texto) {
 
 // ---------- Panel del equipo (fase 3) ----------
 // Conteos, puntaje, tiempo medio y % en plazo: los calcula la base con la misma fórmula de la foto diaria.
-export async function metricasEquipo(equipoId) {
+export const metricasEquipo = compartir(async function metricasEquipo(equipoId) {
   const r = await supabase.rpc('metricas_equipo', { p_equipo: equipoId }).single()
   return resultado(r, 'No se pudieron calcular las métricas.', 'metricasEquipo')
-}
+})
 
 // { ramaVigiladaId: { nuevas_alta, nuevas_media, nuevas_baja, corregidas } } frente a la rama principal.
-export async function semaforoRamas(equipoId) {
+export const semaforoRamas = compartir(async function semaforoRamas(equipoId) {
   const r = await supabase.rpc('semaforo_ramas', { p_equipo: equipoId })
   if (r.error) return resultado(r, 'No se pudo calcular el semáforo.', 'semaforoRamas')
   return { data: Object.fromEntries(r.data.map((s) => [s.rama_vigilada_id, s])) }
-}
+})
 
 // { usuarioId: fecha } de la última vez que cambió o comentó algo del equipo.
-export async function actividadEquipo(equipoId) {
+export const actividadEquipo = compartir(async function actividadEquipo(equipoId) {
   const r = await supabase.rpc('actividad_equipo', { p_equipo: equipoId })
   if (r.error) return resultado(r, 'No se pudo cargar la actividad.', 'actividadEquipo')
   return { data: Object.fromEntries(r.data.map((a) => [a.usuario_id, a.ultima])) }
-}
+})
 
-export async function listarNotificaciones(equipoId, dias = 90) {
+export const listarNotificaciones = compartir(async function listarNotificaciones(equipoId, dias = 90) {
   const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString()
   const r = await supabase
     .from('notificaciones')
@@ -176,10 +177,10 @@ export async function listarNotificaciones(equipoId, dias = 90) {
     .order('creado_en', { ascending: false })
     .limit(300)
   return resultado(r, 'No se pudo cargar el registro de envíos.', 'listarNotificaciones')
-}
+})
 
 // Conversación del asistente IA del equipo (la RLS solo deja leerla al administrador).
-export async function obtenerChatEquipo(equipoId) {
+export const obtenerChatEquipo = compartir(async function obtenerChatEquipo(equipoId) {
   const r = await supabase
     .from('chat_equipo')
     .select('autor, contenido, creado_en')
@@ -189,4 +190,4 @@ export async function obtenerChatEquipo(equipoId) {
     .limit(200)
   if (r.error) return resultado(r, 'No se pudo cargar la conversación.', 'obtenerChatEquipo')
   return { data: r.data.map((m) => ({ rol: m.autor, texto: m.contenido, creado_en: m.creado_en })) }
-}
+})

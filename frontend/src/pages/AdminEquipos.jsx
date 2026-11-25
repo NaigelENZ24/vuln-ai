@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Users, X } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { crearEquipo, eliminarEquipo, listarEquipos } from '../services/equiposService.js'
 import { formatearFecha } from '../utils/formato.js'
 import '../styles/equipos.css'
+import Esqueleto from '../components/Esqueleto.jsx'
 
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`
 
 export default function AdminEquipos() {
   const navigate = useNavigate()
+  const { esAdmin, cupoEquipos } = useAuth()
   const [equipos, setEquipos] = useState(null)
   const [error, setError] = useState('')
   const [intento, setIntento] = useState(0)
@@ -64,6 +67,10 @@ export default function AdminEquipos() {
     if (!fallo) setIntento((n) => n + 1)
   }
 
+  // El líder solo crea hasta su cupo aprobado; la base lo vuelve a comprobar en crear_equipo.
+  const restantes = esAdmin ? Infinity : Math.max(0, cupoEquipos - (equipos?.length ?? 0))
+  const puedeCrear = equipos !== null && restantes > 0
+
   const abrirForm = () => {
     setFormAbierto(true)
     setErrorForm('')
@@ -71,10 +78,21 @@ export default function AdminEquipos() {
 
   return (
     <AdminLayout
-      titulo="Equipos de trabajo"
-      descripcion="Agrupa a las personas que corrigen las vulnerabilidades de un mismo proyecto."
+      titulo={esAdmin ? 'Equipos de trabajo' : 'Mis equipos'}
+      descripcion={
+        esAdmin
+          ? 'Todos los equipos del sistema, incluidos los que crean los líderes de equipo.'
+          : 'Agrupa a las personas que corrigen las vulnerabilidades de tu proyecto. Solo tú ves y gestionas tus equipos.'
+      }
     >
-      {formAbierto ? (
+      {!esAdmin && equipos !== null && (
+        <p className="panel__aviso panel__aviso--suelto" role="status">
+          {restantes > 0
+            ? `Puedes crear ${restantes === 1 ? '1 equipo más' : `${restantes} equipos más`}.`
+            : 'Ya creaste todos los equipos que te aprobaron. Si necesitas más, envía otra solicitud desde la página principal.'}
+        </p>
+      )}
+      {!puedeCrear && !formAbierto ? null : formAbierto ? (
         <form className="panel equipo-nuevo" onSubmit={crear} noValidate>
           <div className="equipo-nuevo__cabecera">
             <h2>Nuevo equipo</h2>
@@ -114,12 +132,15 @@ export default function AdminEquipos() {
           )}
         </form>
       ) : (
-        <div>
-          <button type="button" className="btn-primario" onClick={abrirForm}>
-            <Plus size={18} aria-hidden="true" />
-            Nuevo equipo
-          </button>
-        </div>
+        // Sin equipos, el botón está en el centro («Crear el primer equipo»): aquí no se repite.
+        equipos?.length > 0 && (
+          <div>
+            <button type="button" className="btn-primario" onClick={abrirForm}>
+              <Plus size={18} aria-hidden="true" />
+              Nuevo equipo
+            </button>
+          </div>
+        )
       )}
 
       {error && (
@@ -132,12 +153,10 @@ export default function AdminEquipos() {
       )}
 
       {!error && equipos === null && (
-        <p className="estado-vacio" role="status">
-          Cargando equipos…
-        </p>
+        <Esqueleto forma="tarjetas" etiqueta="Cargando equipos…" />
       )}
 
-      {equipos?.length === 0 && !formAbierto && (
+      {equipos?.length === 0 && !formAbierto && puedeCrear && (
         <section className="panel vacio-equipos">
           <Users size={28} aria-hidden="true" />
           <h2>Todavía no hay equipos</h2>
@@ -174,6 +193,9 @@ export default function AdminEquipos() {
               <Link className="equipo-tarjeta" to={`/admin/equipos/${e.id}`}>
                 <h2>{e.nombre}</h2>
                 {e.descripcion && <p className="equipo-tarjeta__desc">{e.descripcion}</p>}
+                {esAdmin && e.lider && e.lider.rol !== 'administrador' && (
+                  <p className="equipo-tarjeta__desc">Líder: {e.lider.nombre}</p>
+                )}
                 <dl className="equipo-tarjeta__datos">
                   <div>
                     <dt>Miembros</dt>

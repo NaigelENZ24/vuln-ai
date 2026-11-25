@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader.jsx'
+import SolicitudEquipo from '../components/SolicitudEquipo.jsx'
 import { MENSAJE_URL_INVALIDA, parseRepoGitHub } from '../utils/github.js'
 import '../styles/landing.css'
 
@@ -109,6 +110,8 @@ export default function Landing() {
             ))}
           </ol>
         </section>
+
+        <SolicitudEquipo />
       </main>
     </div>
   )
