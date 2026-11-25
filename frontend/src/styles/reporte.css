@@ -1,0 +1,235 @@
+/* Reporte general del administrador: en pantalla es una hoja para revisar; al imprimir, un A4 limpio.
+   Colores: papel blanco, texto negro, gris de apoyo #3a424b (ya usado en el proyecto) y una sola tinta, --accent-strong. */
+
+.rep-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.rep-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: #ff6b6b;
+}
+
+/* ---------- La hoja ---------- */
+.rep-hoja {
+  --rep-tinta: #000;
+  --rep-apoyo: #3a424b;
+  --rep-linea: #c3c9d0;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: clamp(20px, 5vw, 16mm);
+  background: #fff;
+  color: var(--rep-tinta);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  border-radius: 4px;
+  color-scheme: light;
+}
+
+.rep-cabecera {
+  border-top: 6px solid var(--accent-strong);
+  padding-top: 14px;
+}
+
+.rep-marca {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 10pt;
+  color: var(--accent-strong);
+}
+
+.rep-titulo {
+  margin: 2px 0 12px;
+  font-family: var(--font);
+  font-size: 22pt;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.rep-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 32px;
+  margin: 0;
+  font-family: var(--font);
+  font-size: 9pt;
+  color: var(--rep-apoyo);
+}
+
+.rep-meta div {
+  display: flex;
+  gap: 6px;
+}
+
+.rep-meta dt {
+  font-weight: 700;
+}
+
+.rep-meta dd {
+  margin: 0;
+}
+
+/* La frase de apertura: el estado general dicho como lo escribiría un auditor */
+.rep-entrada {
+  margin: 22px 0 6px;
+  padding: 14px 0;
+  border-block: 1px solid var(--rep-linea);
+  font-size: 12.5pt;
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.rep-seccion {
+  margin-top: 26px;
+}
+
+.rep-seccion h3 {
+  font-family: var(--font);
+  font-size: 12pt;
+  font-weight: 700;
+  color: var(--accent-strong);
+  margin-bottom: 8px;
+  break-after: avoid;
+}
+
+.rep-nota {
+  font-size: 9.5pt;
+  color: var(--rep-apoyo);
+  margin-bottom: 8px;
+}
+
+/* ---------- Tablas ---------- */
+.rep-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font);
+  font-size: 8.5pt;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-tabla th,
+.rep-tabla td {
+  padding: 5px 8px 5px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rep-linea);
+}
+
+.rep-tabla thead th {
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--rep-tinta);
+  white-space: nowrap;
+}
+
+.rep-tabla tr {
+  break-inside: avoid;
+}
+
+.rep-tabla--resumen {
+  max-width: 105mm;
+  font-size: 9.5pt;
+}
+
+.rep-tabla--resumen th {
+  font-weight: 400;
+}
+
+.rep-num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.rep-tabla th.rep-num,
+.rep-tabla td.rep-num {
+  padding-right: 0;
+  padding-left: 10px;
+}
+
+/* La severidad alta se marca con peso, no con color: los --sev-* no llegan a 4,5:1 sobre papel
+   y el reporte debe leerse igual impreso en blanco y negro. */
+.rep-num--alta,
+.rep-total {
+  font-weight: 700;
+}
+
+.rep-fecha {
+  white-space: nowrap;
+  color: var(--rep-apoyo);
+}
+
+.rep-repo {
+  font-family: var(--mono);
+  font-size: 8pt;
+  overflow-wrap: anywhere;
+}
+
+.rep-equipo {
+  display: block;
+  font-weight: 700;
+}
+
+.rep-sub {
+  display: block;
+  color: var(--rep-apoyo);
+  font-size: 8pt;
+}
+
+.rep-pie {
+  margin-top: 28px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rep-linea);
+  font-size: 8.5pt;
+  color: var(--rep-apoyo);
+}
+
+/* ---------- Impresión / PDF ---------- */
+@page {
+  size: A4;
+  margin: 16mm 14mm 18mm;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .admin__lateral,
+  .admin__barra,
+  .admin__titulo,
+  .admin__velo,
+  .rep-barra,
+  .saltar {
+    display: none !important;
+  }
+
+  .admin,
+  .admin__cuerpo,
+  .admin__contenido {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+
+  .rep-hoja {
+    max-width: none;
+    padding: 0;
+    border-radius: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

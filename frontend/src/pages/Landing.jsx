@@ -2,25 +2,27 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader.jsx'
 import SolicitudEquipo from '../components/SolicitudEquipo.jsx'
+import PiePagina from '../components/PiePagina.jsx'
 import { MENSAJE_URL_INVALIDA, parseRepoGitHub } from '../utils/github.js'
 import '../styles/landing.css'
 
 const EJEMPLOS = [
-  'OWASP/NodeGoat',
   'we45/Vulnerable-Flask-App',
-  'digininja/DVWA',
+  'adeyosemanputra/pygoat',
+  'anxolerd/dvpwa',
 ]
 
 const PASOS = [
   {
     n: '01',
     titulo: 'Análisis estático',
-    texto: '30 reglas SAST detectan secretos, inyecciones, XSS, criptografía débil y configuraciones inseguras.',
+    texto:
+      'Bandit revisa el código Python y Semgrep el de JavaScript, TypeScript, React y Django: secretos, inyecciones, XSS, criptografía débil y configuraciones inseguras.',
   },
   {
     n: '02',
     titulo: 'Interpretación con LLM',
-    texto: 'Cada hallazgo se explica en lenguaje natural con su impacto y una prioridad de P1 a P4.',
+    texto: 'Cada hallazgo se explica en lenguaje natural con su impacto y se ordena por severidad para saber qué atender primero.',
   },
   {
     n: '03',
@@ -113,6 +115,7 @@ export default function Landing() {
 
         <SolicitudEquipo />
       </main>
+      <PiePagina />
     </div>
   )
 }

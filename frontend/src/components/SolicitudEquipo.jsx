@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -15,6 +15,7 @@ export default function SolicitudEquipo() {
   const [solicitud, setSolicitud] = useState(null)
   const [abierto, setAbierto] = useState(false)
   const [intento, setIntento] = useState(0)
+  const botonRef = useRef(null)
 
   useEffect(() => {
     if (!usuario || esAdmin) return
@@ -55,7 +56,7 @@ export default function SolicitudEquipo() {
         </Link>
       ) : (
         !pendiente && (
-          <button type="button" className="btn-primario" onClick={abrir}>
+          <button type="button" className="btn-primario" onClick={abrir} ref={botonRef}>
             <Users size={18} aria-hidden="true" />
             Contáctanos
           </button>
@@ -64,7 +65,10 @@ export default function SolicitudEquipo() {
       {abierto && (
         <FormularioSolicitud
           correo={usuario.email}
-          onCerrar={() => setAbierto(false)}
+          onCerrar={() => {
+            setAbierto(false)
+            botonRef.current?.focus() // el foco vuelve a donde estaba quien usa teclado
+          }}
           onEnviada={() => {
             setAbierto(false)
             setIntento((n) => n + 1)
@@ -181,6 +185,14 @@ function FormularioSolicitud({ correo, onCerrar, onEnviada }) {
               {error}
             </p>
           )}
+          <p className="nota-privacidad">
+            Usaremos estos datos solo para revisar tu solicitud; los recibe el administrador por correo. Más detalles en
+            la{' '}
+            <Link to="/privacidad" target="_blank" rel="noreferrer">
+              política de privacidad<span className="sr-only"> (se abre en una pestaña nueva)</span>
+            </Link>
+            .
+          </p>
           <button type="submit" className="btn-primario" disabled={enviando}>
             {enviando ? 'Enviando…' : 'Enviar solicitud'}
           </button>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, FileText } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout.jsx'
 import { ESTADOS_ANALISIS } from '../constants/estados.js'
 import { listarAnalisis, listarUsuarios, obtenerResumen } from '../services/adminService.js'
@@ -107,6 +107,12 @@ export default function AdminDashboard() {
       titulo="Panel de administración"
       descripcion="Análisis de seguridad realizados por todos los usuarios."
     >
+      <div className="rep-acceso">
+        <Link className="btn-primario" to="/admin/reporte">
+          <FileText size={18} aria-hidden="true" />
+          Descargar reporte
+        </Link>
+      </div>
       {tarjetas && (
         <section className="kpis" aria-label="Totales">
           {tarjetas.map((t) => (

@@ -321,7 +321,8 @@
 }
 
 .btn-tabla:hover {
-  background: #1f7d5e;
+  /* #1f7d5e dejaba el texto en 4,35:1; el anillo marca el hover y mantiene 5,5:1 (WCAG AA). */
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .paginacion {
@@ -521,4 +522,15 @@
   color: var(--accent-ink);
   background: var(--accent);
   border-radius: 999px;
+}
+
+/* Acceso al reporte desde el panel del administrador */
+.rep-acceso {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.rep-acceso .btn-primario {
+  text-decoration: none;
 }

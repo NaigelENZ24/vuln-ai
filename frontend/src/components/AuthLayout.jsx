@@ -1,4 +1,5 @@
 import SiteHeader from './SiteHeader.jsx'
+import PiePagina from './PiePagina.jsx'
 import '../styles/auth.css'
 
 export default function AuthLayout({ titulo, subtitulo, pie, children }) {
@@ -13,6 +14,7 @@ export default function AuthLayout({ titulo, subtitulo, pie, children }) {
           <p className="auth__pie">{pie}</p>
         </section>
       </main>
+      <PiePagina />
     </div>
   )
 }

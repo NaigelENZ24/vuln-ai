@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Esqueleto from './components/Esqueleto.jsx'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
@@ -20,6 +20,10 @@ const Invitacion = lazy(() => import('./pages/Invitacion.jsx'))
 const MiTrabajo = lazy(() => import('./pages/MiTrabajo.jsx'))
 const Incidencia = lazy(() => import('./pages/Incidencia.jsx'))
 const AdminSolicitudes = lazy(() => import('./pages/AdminSolicitudes.jsx'))
+const AdminReporte = lazy(() => import('./pages/AdminReporte.jsx'))
+const Privacidad = lazy(() => import('./pages/Privacidad.jsx'))
+const Terminos = lazy(() => import('./pages/Terminos.jsx'))
+const NoEncontrada = lazy(() => import('./pages/NoEncontrada.jsx'))
 
 export default function App() {
   return (
@@ -39,11 +43,14 @@ export default function App() {
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
+      <Route path="/privacidad" element={<Privacidad />} />
+      <Route path="/terminos" element={<Terminos />} />
 
       <Route element={<RutaAdmin />}>
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/analisis/:id" element={<AdminAnalisisDetalle />} />
         <Route path="/admin/solicitudes" element={<AdminSolicitudes />} />
+        <Route path="/admin/reporte" element={<AdminReporte />} />
       </Route>
 
       {/* Equipos: el admin (todos) o un líder (los suyos, por RLS). */}
@@ -52,7 +59,7 @@ export default function App() {
         <Route path="/admin/equipos/:id" element={<AdminEquipo />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NoEncontrada />} />
     </Routes>
     </Suspense>
   )

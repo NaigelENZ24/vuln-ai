@@ -27,14 +27,14 @@ const n = (conteo) => conteo?.[0]?.count ?? 0
 export const listarEquipos = compartir(async function listarEquipos() {
   const r = await supabase
     .from('equipos')
-    .select('id, nombre, descripcion, creado_en, creado_por, lider:perfiles!creado_por(nombre, rol), miembros:miembros_equipo(count), pendientes:invitaciones(count)')
+    .select('id, nombre, descripcion, creado_en, creado_por, lider:perfiles!creado_por(nombre, rol), miembros:miembros_equipo(count), pendientes:invitaciones(count), repos:repositorios(count)')
     // Solo cuenta invitaciones pendientes; no filtra la lista de equipos.
     .is('pendientes.aceptada_en', null)
     .is('pendientes.revocada_en', null)
     .order('creado_en', { ascending: false })
   if (r.error) return resultado(r, 'No se pudieron cargar los equipos.', 'listarEquipos')
   return {
-    data: r.data.map((e) => ({ ...e, miembros: n(e.miembros), pendientes: n(e.pendientes) })),
+    data: r.data.map((e) => ({ ...e, miembros: n(e.miembros), pendientes: n(e.pendientes), repos: n(e.repos) })),
   }
 })
 

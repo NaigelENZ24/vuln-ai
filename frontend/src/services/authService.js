@@ -15,11 +15,12 @@ function traducir(error, porDefecto) {
   return MENSAJES[error.code] ?? porDefecto
 }
 
-export async function registrar({ nombre, correo, clave }) {
+export async function registrar({ nombre, correo, clave, versionLegal }) {
   const { data, error } = await supabase.auth.signUp({
     email: correo,
     password: clave,
-    options: { data: { nombre } },
+    // Constancia del consentimiento (LOPDP): qué versión de los términos aceptó y cuándo.
+    options: { data: { nombre, acepto_terminos: { version: versionLegal, fecha: new Date().toISOString() } } },
   })
   if (error) return { error: traducir(error, 'No se pudo crear la cuenta. Inténtalo de nuevo.') }
   // Si la confirmación por correo está activa, no hay sesión hasta que se confirme.

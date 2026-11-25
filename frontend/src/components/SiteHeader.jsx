@@ -3,6 +3,7 @@ import { ClipboardList, History, LayoutDashboard, ShieldCheck } from 'lucide-rea
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
 import AvisoInvitaciones from './AvisoInvitaciones.jsx'
+import SaltarContenido from './SaltarContenido.jsx'
 import '../styles/header.css'
 
 export default function SiteHeader() {
@@ -12,6 +13,7 @@ export default function SiteHeader() {
 
   return (
     <header className="sitio-header">
+      <SaltarContenido />
       <div className="sitio-header__interior">
         <Link className="marca" to="/">
           <span className="marca__logo">

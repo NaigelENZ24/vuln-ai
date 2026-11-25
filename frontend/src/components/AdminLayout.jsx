@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Globe, Inbox, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
+import { FileText, Globe, Inbox, LayoutDashboard, LogOut, Menu, ShieldCheck, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { cerrarSesion } from '../services/authService.js'
 import { contarPendientes } from '../services/solicitudesService.js'
+import SaltarContenido from './SaltarContenido.jsx'
 import '../styles/header.css'
 import '../styles/admin.css'
 
@@ -20,6 +21,7 @@ export default function AdminLayout({ titulo, descripcion, children }) {
 
   return (
     <div className={`admin ${menuAbierto ? 'admin--menu' : ''}`}>
+      <SaltarContenido />
       <aside className="admin__lateral" aria-label="Navegación del panel">
         <Link className="marca admin__marca" to={esAdmin ? '/admin' : '/admin/equipos'} onClick={cerrarMenu}>
           <span className="marca__logo">
@@ -49,6 +51,12 @@ export default function AdminLayout({ titulo, descripcion, children }) {
                 {pendientes}
               </span>
             )}
+          </NavLink>
+        )}
+        {esAdmin && (
+          <NavLink to="/admin/reporte" className={clase} onClick={cerrarMenu}>
+            <FileText size={18} aria-hidden="true" />
+            Reporte general
           </NavLink>
         )}
 

@@ -88,8 +88,8 @@
 }
 
 .btn-cabecera--primario:hover {
-  background: #1f7d5e;
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  /* #1f7d5e dejaba el texto en 4,35:1; el anillo marca el hover y mantiene 5,5:1 (WCAG AA). */
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .sitio-header__acciones {
@@ -107,4 +107,26 @@ button.btn-cabecera {
   font-weight: 500;
   background: transparent;
   cursor: pointer;
+}
+/* Enlace para saltar al contenido: invisible hasta que recibe el foco con el teclado */
+.saltar {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.saltar:focus {
+  top: 12px;
+}
+
+/* El <main> recibe el foco al saltar; no hace falta el contorno en todo el bloque. */
+main[tabindex="-1"]:focus {
+  outline: none;
 }

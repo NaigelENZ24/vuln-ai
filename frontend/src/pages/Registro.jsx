@@ -11,8 +11,10 @@ import {
   validarCorreo,
   validarUsuario,
 } from '../utils/validaciones.js'
+import { VERSION_LEGAL } from '../constants/legal.js'
 
-const VACIO = { nombre: '', correo: '', clave: '' }
+const VACIO = { nombre: '', correo: '', clave: '', acepta: false }
+const ERROR_CONSENTIMIENTO = 'Debes aceptar los términos y la política de privacidad para crear la cuenta.'
 
 export default function Registro() {
   const { usuario, cargando } = useAuth()
@@ -25,8 +27,8 @@ export default function Registro() {
   if (!cargando && usuario) return <Navigate to="/" replace />
 
   function cambiar(e) {
-    const { name, value } = e.target
-    setDatos((d) => ({ ...d, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setDatos((d) => ({ ...d, [name]: type === 'checkbox' ? checked : value }))
     setErrores((er) => ({ ...er, [name]: '' }))
   }
 
@@ -37,6 +39,7 @@ export default function Registro() {
       nombre: validarUsuario(datos.nombre),
       correo: validarCorreo(datos.correo),
       clave: validarClaveNueva(datos.clave),
+      acepta: datos.acepta ? '' : ERROR_CONSENTIMIENTO,
     }
     setErrores(nuevos)
     if (hayErrores(nuevos)) {
@@ -51,6 +54,7 @@ export default function Registro() {
       nombre: datos.nombre.trim(),
       correo: datos.correo.trim(),
       clave: datos.clave,
+      versionLegal: VERSION_LEGAL,
     })
     setEnviando(false)
 
@@ -115,6 +119,34 @@ export default function Registro() {
           onChange={cambiar}
           error={errores.clave}
         />
+        <div>
+          <label className="consentimiento">
+            <input
+              type="checkbox"
+              name="acepta"
+              checked={datos.acepta}
+              onChange={cambiar}
+              aria-invalid={errores.acepta ? 'true' : undefined}
+              aria-describedby={errores.acepta ? 'acepta-error' : undefined}
+            />
+            <span>
+              He leído y acepto los{' '}
+              <Link to="/terminos" target="_blank" rel="noreferrer">
+                términos y condiciones<span className="sr-only"> (se abre en una pestaña nueva)</span>
+              </Link>{' '}
+              y la{' '}
+              <Link to="/privacidad" target="_blank" rel="noreferrer">
+                política de privacidad<span className="sr-only"> (se abre en una pestaña nueva)</span>
+              </Link>
+              .
+            </span>
+          </label>
+          {errores.acepta && (
+            <p id="acepta-error" className="campo__error" role="alert">
+              {errores.acepta}
+            </p>
+          )}
+        </div>
         <button className="auth__boton" type="submit" disabled={enviando}>
           {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
